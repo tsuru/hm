@@ -1,7 +1,7 @@
 .PHONY: test test_deps
 
 test: test_deps
-	@python -m unittest discover tests
+	@python -m unittest discover
 	@flake8 --max-line-length=110 .
 
 test_deps:

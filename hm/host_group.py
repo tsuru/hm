@@ -18,7 +18,7 @@ class HostGroup(object):
 
     def add_host(self, manager_name, conf=None):
         manager = managers.by_name(manager_name, conf)
-        host = manager.create()
+        host = manager.create_host()
         host.manager = manager_name
         self.storage.add_host_to_group(self.name, host)
         return host
@@ -29,7 +29,7 @@ class HostGroup(object):
             raise HostNotFoundError(host_id, self.name)
         manager = managers.by_name(host.manager)
         try:
-            manager.destroy(host.id)
+            manager.destroy_host(host.id)
         except Exception as e:
             log.error("Error trying to destroy host '{}' in '{}': {}".format(host.id, host.manager, e))
         self.storage.remove_host_from_group(self.name, host_id)

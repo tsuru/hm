@@ -4,7 +4,8 @@
 
 import unittest
 
-from hm import managers, host, storage
+from hm import managers, storage
+from hm.model import host
 from hm.host_group import HostGroup, HostNotFoundError
 
 
@@ -12,11 +13,11 @@ class FakeManager(managers.BaseManager):
     def __init__(self, config=None):
         super(FakeManager, self).__init__(config)
 
-    def create(self):
-        host_id = self.get_env('HOST_ID')
+    def create_host(self):
+        host_id = self.get_conf('HOST_ID')
         return host.Host(id=host_id, dns_name="{}.myhost.com".format(host_id))
 
-    def destroy(self, id):
+    def destroy_host(self, id):
         if id == "explode":
             raise Exception("failure to destroy")
 

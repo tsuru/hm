@@ -8,7 +8,7 @@ import os
 undefined = object()
 
 
-def get_config(name, config=None, default=undefined):
+def get_config(name, default=undefined, config=None):
     try:
         value = (config or {}).get(name)
         if value is None:

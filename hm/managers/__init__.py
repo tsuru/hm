@@ -8,9 +8,13 @@ from hm import config
 
 
 _managers = {}
+_expected_methods = ['create_host', 'destroy_host']
 
 
 def register(name, cls):
+    for m in _expected_methods:
+        if not getattr(cls, m, None):
+            raise InvalidManager("Expected method '{}' not found in {}".format(m, cls))
     _managers[name] = cls
 
 
@@ -22,15 +26,19 @@ class BaseManager(object):
     def __init__(self, conf):
         self.config = conf or {}
 
-    def get_env(self, name, default=config.undefined):
-        return config.get_config(name, self.config, default)
+    def get_conf(self, name, default=config.undefined):
+        return config.get_config(name, default, self.config)
 
     def get_user_data(self):
-        url = self.get_env("USER_DATA_URL", default=None)
+        url = self.get_conf("USER_DATA_URL", default=None)
         if not url:
             return None
         rsp = requests.get(url)
-        if 200 <= rsp.status_code < 400:
+        if rsp.status_code < 200 or rsp.status_code >= 400:
             raise config.MissConfigurationError("invalid user data response from {}: {} - {}",
                                                 url, rsp.status_code, rsp.data)
         return rsp.data
+
+
+class InvalidManager(Exception):
+    pass

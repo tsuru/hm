@@ -4,17 +4,18 @@
 
 import pymongo
 
-from hm import config, host
+from hm import config
+from hm.model import host
 
 
 class MongoDBStorage(object):
+    instances_collection = "instances"
 
     def __init__(self, conf=None):
-        self.mongo_uri = config.get_config('MONGO_URI', conf, 'mongodb://localhost:27017/')
-        self.mongo_database = config.get_config('MONGO_DATABASE', conf, 'host_manager')
+        self.mongo_uri = config.get_config('MONGO_URI', 'mongodb://localhost:27017/', conf)
+        self.mongo_database = config.get_config('MONGO_DATABASE', 'host_manager', conf)
         client = pymongo.MongoClient(self.mongo_uri)
         self.db = client[self.mongo_database]
-        self.collection_name = "instances"
 
     def add_host_to_group(self, group_name, host):
         self._collection().update(
@@ -43,4 +44,4 @@ class MongoDBStorage(object):
         return [host.from_dict(h) for h in group['hosts']]
 
     def _collection(self):
-        return self.db[self.collection_name]
+        return self.db[self.instances_collection]

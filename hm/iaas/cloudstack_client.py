@@ -6,6 +6,7 @@ import hmac
 import hashlib
 import json
 import urllib
+import time
 
 
 class CloudStack(object):
@@ -58,3 +59,25 @@ class CloudStack(object):
         data = self._http_get(self.value)
         key = command.lower() + "response"
         return json.loads(data)[key]
+
+    def wait_for_job(self, job_id, max_tries):
+        status = 0
+        tries = 0
+        while tries < max_tries:
+            result = self.queryAsyncJobResult({"jobid": job_id})
+            status = result["jobstatus"]
+            if status != 0:
+                break
+            time.sleep(1)
+            tries += 1
+        if status == 0:
+            raise MaxTryWaitingForJobError(max_tries, job_id)
+
+
+class MaxTryWaitingForJobError(Exception):
+
+    def __init__(self, max_tries, job_id):
+        self.max_tries = max_tries
+        self.job_id = job_id
+        msg = "exceeded {0} tries waiting for job {1}".format(max_tries, job_id)
+        super(MaxTryWaitingForJobError, self).__init__(msg)
