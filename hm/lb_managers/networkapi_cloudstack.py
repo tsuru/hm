@@ -32,12 +32,14 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
             environment_p44=self.get_conf("NETWORKAPI_AMBIENTE_P44_TXT"),
             client=self.get_conf("NETWORKAPI_CLIENTE_TXT"),
             finality=self.get_conf("NETWORKAPI_FINALIDADE_TXT"),
-            healthcheck=self.get_conf("VIP_HEALTHCHECK", "GET /_varnish_healthcheck/ HTTP/1.1\r\n\r\n"),
+            healthcheck=self.get_conf("VIP_HEALTHCHECK", "GET / HTTP/1.1\r\n\r\n"),
             healthcheck_expect=self.get_conf("VIP_HEALTHCHECK_EXPECT", 26),
             lb_method=self.get_conf("VIP_METHOD_BAL", "least-conn"),
             persistence=self.get_conf("VIP_PERSISTENCE", "(nenhum)"),
             cache=self.get_conf("VIP_CACHE", "(nenhum)"),
             maxconn=self.get_conf("VIP_MAXCONN", "1000"),
+            business_area=self.get_conf("VIP_BUSINESS_AREA", ""),
+            service_name=self.get_conf("VIP_SERVICE_NAME", ""),
         )
 
     def create_load_balancer(self, name):
@@ -104,7 +106,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         client_ip = Ip.Ip(self.networkapi_endpoint, self.networkapi_user,
                           self.networkapi_password)
         vip_ip = client_ip.get_available_ip4_for_vip(evip["environment_vip"]["id"],
-                                                     u"Tsuru RPaaS {0}".format(name))
+                                                     u"tsuru hm {0}".format(name))
         try:
             client_vip = Vip.Vip(self.networkapi_endpoint, self.networkapi_user,
                                  self.networkapi_password)
@@ -120,10 +122,10 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
                                      healthcheck_type=u"HTTP",
                                      healthcheck=vip_config.healthcheck,
                                      timeout="5",
-                                     host="{0}.feaas.cloud.globoi.com".format(name),
+                                     host="{0}.hm.tsuru".format(name),
                                      maxcon=vip_config.maxconn,
-                                     areanegocio=u"Plataformas",
-                                     nome_servico=u"Tsuru",
+                                     areanegocio=vip_config.business_area,
+                                     nome_servico=vip_config.service_name,
                                      l7_filter=None,
                                      reals=[],
                                      reals_prioritys=[],
@@ -158,6 +160,8 @@ class VIPConfig(object):
     lb_method = None
     persistence = None
     maxconn = None
+    business_area = None
+    service_name = None
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():

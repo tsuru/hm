@@ -21,9 +21,9 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
             'NETWORKAPI_ENDPOINT': 'http://networkapi.host',
             'NETWORKAPI_USER': 'tsuru',
             'NETWORKAPI_PASSWORD': 'secret',
-            'NETWORKAPI_CLIENTE_TXT': 'Usuario Interno',
-            'NETWORKAPI_FINALIDADE_TXT': 'Homologacao',
-            'NETWORKAPI_AMBIENTE_P44_TXT': 'Homolog Citta FE',
+            'NETWORKAPI_CLIENTE_TXT': 'client',
+            'NETWORKAPI_FINALIDADE_TXT': 'destination',
+            'NETWORKAPI_AMBIENTE_P44_TXT': 'environment',
 
             'VIP_HEALTHCHECK': 'GET /',
             'VIP_HEALTHCHECK_EXPECT': '55',
@@ -31,6 +31,8 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
             'VIP_PERSISTENCE': 'wat',
             'VIP_CACHE': 'powerful cache',
             'VIP_MAXCONN': '1500',
+            'VIP_BUSINESS_AREA': 'business-area',
+            'VIP_SERVICE_NAME': 'service-name',
         }
 
     def test_init(self):
@@ -43,14 +45,16 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         self.assertEqual(manager.networkapi_endpoint, 'http://networkapi.host')
         self.assertEqual(manager.networkapi_user, 'tsuru')
         self.assertEqual(manager.networkapi_password, 'secret')
-        self.assertEqual(manager.vip_config.environment_p44, 'Homolog Citta FE')
-        self.assertEqual(manager.vip_config.client, 'Usuario Interno')
-        self.assertEqual(manager.vip_config.finality, 'Homologacao')
+        self.assertEqual(manager.vip_config.environment_p44, 'environment')
+        self.assertEqual(manager.vip_config.client, 'client')
+        self.assertEqual(manager.vip_config.finality, 'destination')
         self.assertEqual(manager.vip_config.healthcheck, 'GET /')
         self.assertEqual(manager.vip_config.healthcheck_expect, '55')
         self.assertEqual(manager.vip_config.lb_method, 'brincation_uite_me')
         self.assertEqual(manager.vip_config.cache, 'powerful cache')
         self.assertEqual(manager.vip_config.maxconn, '1500')
+        self.assertEqual(manager.vip_config.business_area, 'business-area')
+        self.assertEqual(manager.vip_config.service_name, 'service-name')
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.log")
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
@@ -76,6 +80,8 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         self.assertEqual(27, lb.id)
         self.assertEqual(303, lb.ip_id)
         self.assertEqual("192.168.1.7", lb.address)
+        self.assertEqual("tsuru", lb.name)
+        self.assertEqual("proj-123", lb.project_id)
 
         data = {"projectid": "proj-123", "vipid": 27, "networkid": "net-098"}
         cloudstack_client.addGloboNetworkVipToAccount.assert_called_with(data)
@@ -88,7 +94,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         client_evip.search.assert_called_with(ambiente_p44_txt=self.conf["NETWORKAPI_AMBIENTE_P44_TXT"],
                                               cliente_txt=self.conf["NETWORKAPI_CLIENTE_TXT"],
                                               finalidade_txt=self.conf["NETWORKAPI_FINALIDADE_TXT"])
-        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"Tsuru RPaaS tsuru")
+        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"tsuru hm tsuru")
         client_vip.add.assert_called_with(id_ipv4=303, id_ipv6=None,
                                           id_healthcheck_expect=self.conf["VIP_HEALTHCHECK_EXPECT"],
                                           finality=self.conf["NETWORKAPI_FINALIDADE_TXT"],
@@ -97,12 +103,14 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
                                           cache=self.conf["VIP_CACHE"],
                                           method_bal=self.conf["VIP_METHOD_BAL"],
                                           persistence=self.conf["VIP_PERSISTENCE"],
-                                          healthcheck_type=u"HTTP", timeout=u"5",
+                                          healthcheck_type=u"HTTP",
+                                          timeout=u"5",
                                           healthcheck=self.conf["VIP_HEALTHCHECK"],
-                                          host="tsuru.feaas.cloud.globoi.com",
+                                          host="tsuru.hm.tsuru",
                                           maxcon=self.conf["VIP_MAXCONN"],
-                                          areanegocio=u"Plataformas",
-                                          nome_servico=u"Tsuru", reals=[], reals_prioritys=[],
+                                          areanegocio=self.conf["VIP_BUSINESS_AREA"],
+                                          nome_servico=self.conf["VIP_SERVICE_NAME"],
+                                          reals=[], reals_prioritys=[],
                                           reals_weights=[], ports=["80:8080"], l7_filter=None)
         client_vip.validate.assert_called_with(27)
         client_vip.criar.assert_called_with(27)
@@ -130,7 +138,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         client_evip.search.assert_called_with(ambiente_p44_txt=self.conf["NETWORKAPI_AMBIENTE_P44_TXT"],
                                               cliente_txt=self.conf["NETWORKAPI_CLIENTE_TXT"],
                                               finalidade_txt=self.conf["NETWORKAPI_FINALIDADE_TXT"])
-        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"Tsuru RPaaS tsuru")
+        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"tsuru hm tsuru")
         client_ip.delete_ip4.assert_called_with(303)
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
@@ -156,7 +164,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         client_evip.search.assert_called_with(ambiente_p44_txt=self.conf["NETWORKAPI_AMBIENTE_P44_TXT"],
                                               cliente_txt=self.conf["NETWORKAPI_CLIENTE_TXT"],
                                               finalidade_txt=self.conf["NETWORKAPI_FINALIDADE_TXT"])
-        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"Tsuru RPaaS tsuru")
+        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"tsuru hm tsuru")
         client_ip.delete_ip4.assert_called_with(303)
         client_vip.remove_script.assert_called_with(27)
         client_vip.remover.assert_called_with(27)
@@ -186,7 +194,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         client_evip.search.assert_called_with(ambiente_p44_txt=self.conf["NETWORKAPI_AMBIENTE_P44_TXT"],
                                               cliente_txt=self.conf["NETWORKAPI_CLIENTE_TXT"],
                                               finalidade_txt=self.conf["NETWORKAPI_FINALIDADE_TXT"])
-        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"Tsuru RPaaS tsuru")
+        client_ip.get_available_ip4_for_vip.assert_called_with(500, u"tsuru hm tsuru")
         client_ip.delete_ip4.assert_called_with(303)
         client_vip.remove_script.assert_called_with(27)
         client_vip.remover.assert_called_with(27)

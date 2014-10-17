@@ -5,11 +5,12 @@
 import pymongo
 
 from hm import config
-from hm.model import host
+from hm.model import host, load_balancer
 
 
 class MongoDBStorage(object):
-    instances_collection = "instances"
+    hosts_collection = "hosts"
+    lb_collection = "load_balancers"
 
     def __init__(self, conf=None):
         self.mongo_uri = config.get_config('MONGO_URI', 'mongodb://localhost:27017/', conf)
@@ -17,31 +18,42 @@ class MongoDBStorage(object):
         client = pymongo.MongoClient(self.mongo_uri)
         self.db = client[self.mongo_database]
 
-    def add_host_to_group(self, group_name, host):
-        self._collection().update(
-            {'_id': group_name},
-            {'$addToSet': {'hosts': host.to_json()}},
-            upsert=True
-        )
+    def store_host(self, h):
+        self._hosts_collection().insert(h.to_json())
 
-    def remove_host_from_group(self, group_name, host_id):
-        self._collection().update(
-            {'_id': group_name},
-            {'$pull': {'hosts': {'id': host_id}}},
-        )
+    def remove_host(self, id):
+        self._hosts_collection().remove({'_id': id})
 
-    def host_by_id_group(self, group_name, host_id):
-        group = self._collection().find_one({'_id': group_name, 'hosts.id': host_id})
-        if not group:
-            return None
-        for h in group['hosts']:
-            if h['id'] == host_id:
-                return host.from_dict(h)
-        return None
+    def find_host(self, id):
+        h_data = self._hosts_collection().find_one({'_id': id})
+        return host.Host.from_dict(h_data)
 
-    def hosts_by_group(self, group_name):
-        group = self._collection().find_one(group_name)
-        return [host.from_dict(h) for h in group['hosts']]
+    def list_hosts(self, filters):
+        host_data_list = self._hosts_collection().find(filters) or []
+        return [host.Host.from_dict(h_data) for h_data in host_data_list]
 
-    def _collection(self):
-        return self.db[self.instances_collection]
+    def store_load_balancer(self, lb):
+        self._lb_collection().insert(lb.to_json())
+
+    def remove_load_balancer(self, name):
+        self._lb_collection().remove({'_id': name})
+
+    def find_load_balancer(self, name):
+        lb_data = self._lb_collection().find_one(name)
+        return load_balancer.LoadBalancer.from_dict(lb_data)
+
+    def list_load_balancers(self, filters):
+        lb_data_list = self._lb_collection().find(filters) or []
+        return [load_balancer.LoadBalancer.from_dict(lb_data) for lb_data in lb_data_list]
+
+    def add_host_to_load_balancer(self, name, h):
+        self._lb_collection().update({'_id': name}, {'$push': {'hosts': h.to_json()}})
+
+    def remove_host_from_load_balancer(self, name, h):
+        self._lb_collection().update({'_id': name}, {'$pull': {'hosts': {'_id': h.id}}})
+
+    def _hosts_collection(self):
+        return self.db[self.hosts_collection]
+
+    def _lb_collection(self):
+        return self.db[self.lb_collection]
