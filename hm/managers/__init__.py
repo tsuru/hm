@@ -30,7 +30,10 @@ class BaseManager(object):
         return config.get_config(name, default, self.config)
 
     def get_user_data(self):
-        url = self.get_conf("USER_DATA_URL", default=None)
+        data = self.get_conf("USER_DATA_TXT", None)
+        if data:
+            return data
+        url = self.get_conf("USER_DATA_URL", None)
         if not url:
             return None
         rsp = requests.get(url)
