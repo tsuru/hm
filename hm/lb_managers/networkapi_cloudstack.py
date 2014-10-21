@@ -40,6 +40,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
             maxconn=self.get_conf("VIP_MAXCONN", "1000"),
             business_area=self.get_conf("VIP_BUSINESS_AREA", ""),
             service_name=self.get_conf("VIP_SERVICE_NAME", ""),
+            port_mapping=self.get_conf("VIP_PORT_MAPPING", "80:8080")
         )
 
     def create_load_balancer(self, name):
@@ -130,7 +131,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
                                      reals=[],
                                      reals_prioritys=[],
                                      reals_weights=[],
-                                     ports=["80:8080"])
+                                     ports=[vip_config.port_mapping])
             vip_id = request["requisicao_vip"]["id"]
             log.debug(u"VIP request %s successfully created." % vip_id)
             client_vip.validate(vip_id)
@@ -162,6 +163,7 @@ class VIPConfig(object):
     maxconn = None
     business_area = None
     service_name = None
+    port_mapping = None
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
