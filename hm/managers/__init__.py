@@ -38,9 +38,9 @@ class BaseManager(object):
             return None
         rsp = requests.get(url)
         if rsp.status_code < 200 or rsp.status_code >= 400:
-            raise config.MissConfigurationError("invalid user data response from {}: {} - {}",
-                                                url, rsp.status_code, rsp.data)
-        return rsp.data
+            raise config.MissConfigurationError(
+                "invalid user data response from {}: {} - {}".format(url, rsp.status_code, rsp.text))
+        return rsp.text
 
 
 class InvalidManager(Exception):
