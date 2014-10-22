@@ -13,6 +13,7 @@ class MongoDBStorage(object):
     lb_collection = "load_balancers"
 
     def __init__(self, conf=None):
+        self.config = conf
         self.mongo_uri = config.get_config('MONGO_URI', 'mongodb://localhost:27017/', conf)
         self.mongo_database = config.get_config('MONGO_DATABASE', 'host_manager', conf)
         client = pymongo.MongoClient(self.mongo_uri)
@@ -26,11 +27,11 @@ class MongoDBStorage(object):
 
     def find_host(self, id):
         h_data = self._hosts_collection().find_one({'_id': id})
-        return host.Host.from_dict(h_data)
+        return host.Host.from_dict(h_data, conf=self.config)
 
     def list_hosts(self, filters):
         host_data_list = self._hosts_collection().find(filters) or []
-        return [host.Host.from_dict(h_data) for h_data in host_data_list]
+        return [host.Host.from_dict(h_data, conf=self.config) for h_data in host_data_list]
 
     def store_load_balancer(self, lb):
         self._lb_collection().insert(lb.to_json())
@@ -40,11 +41,11 @@ class MongoDBStorage(object):
 
     def find_load_balancer(self, name):
         lb_data = self._lb_collection().find_one(name)
-        return load_balancer.LoadBalancer.from_dict(lb_data)
+        return load_balancer.LoadBalancer.from_dict(lb_data, conf=self.config)
 
     def list_load_balancers(self, filters):
         lb_data_list = self._lb_collection().find(filters) or []
-        return [load_balancer.LoadBalancer.from_dict(lb_data) for lb_data in lb_data_list]
+        return [load_balancer.LoadBalancer.from_dict(lb_data, conf=self.config) for lb_data in lb_data_list]
 
     def add_host_to_load_balancer(self, name, h):
         self._lb_collection().update({'_id': name}, {'$push': {'hosts': h.to_json()}})

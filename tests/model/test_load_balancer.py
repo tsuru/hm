@@ -39,16 +39,19 @@ class LoadBalancerTestCase(unittest.TestCase):
         mongo_stor._lb_collection().remove()
 
     def test_create(self):
-        lb = LoadBalancer.create('fake', 'my-lb', {'LB_ID': 'xxx'})
+        conf = {'LB_ID': 'xxx'}
+        lb = LoadBalancer.create('fake', 'my-lb', conf=conf)
         self.assertEqual(lb.id, 'xxx')
         self.assertEqual(lb.name, 'my-lb')
         self.assertEqual(lb.manager, 'fake')
         self.assertEqual(lb.extra, 'something')
-        db_lb = LoadBalancer.find('my-lb')
+        self.assertEqual(lb.config, conf)
+        db_lb = LoadBalancer.find('my-lb', conf=conf)
         self.assertEqual(db_lb.id, 'xxx')
         self.assertEqual(db_lb.name, 'my-lb')
         self.assertEqual(db_lb.manager, 'fake')
         self.assertEqual(db_lb.extra, 'something')
+        self.assertEqual(db_lb.config, conf)
 
     def test_create_duplicated(self):
         lb = LoadBalancer.create('fake', 'my-lb', {'LB_ID': 'xxx'})
@@ -76,11 +79,14 @@ class LoadBalancerTestCase(unittest.TestCase):
     def test_add_host(self):
         h1 = Host('x', 'x.me.com')
         h2 = Host('y', 'y.me.com')
-        lb = LoadBalancer.create('fake', 'my-lb', {'LB_ID': 'explode'})
+        conf = {'LB_ID': 'explode'}
+        lb = LoadBalancer.create('fake', 'my-lb', conf)
         lb.add_host(h1)
         lb.add_host(h2)
         self.assertItemsEqual(lb.hosts, [h1, h2])
-        db_lb = LoadBalancer.find('my-lb')
+        db_lb = LoadBalancer.find('my-lb', conf)
+        self.assertEqual(db_lb.hosts[0].config, conf)
+        self.assertEqual(db_lb.hosts[1].config, conf)
         self.assertItemsEqual([h.to_json() for h in db_lb.hosts], [h1.to_json(), h2.to_json()])
 
     def test_remove_host(self):

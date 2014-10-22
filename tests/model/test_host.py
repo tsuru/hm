@@ -26,20 +26,22 @@ managers.register('fake', FakeManager)
 class HostTestCase(unittest.TestCase):
 
     def setUp(self):
-        mongo_stor = storage.MongoDBStorage()
-        mongo_stor._hosts_collection().remove()
+        storage.MongoDBStorage()._hosts_collection().remove()
 
     def test_create(self):
-        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        conf = {"HOST_ID": "fake-id"}
+        host = Host.create('fake', 'my-group', conf)
         self.assertEqual(host.id, "fake-id")
         self.assertEqual(host.dns_name, "fake-id.myhost.com")
         self.assertEqual(host.manager, "fake")
         self.assertEqual(host.group, "my-group")
-        db_host = Host.find('fake-id')
+        self.assertEqual(host.config, conf)
+        db_host = Host.find('fake-id', conf=conf)
         self.assertEqual(db_host.id, "fake-id")
         self.assertEqual(db_host.dns_name, "fake-id.myhost.com")
         self.assertEqual(db_host.manager, "fake")
         self.assertEqual(db_host.group, "my-group")
+        self.assertEqual(db_host.config, conf)
 
     def test_destroy(self):
         host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
@@ -59,7 +61,22 @@ class HostTestCase(unittest.TestCase):
         h1 = Host.create('fake', 'my-group1', {"HOST_ID": "fake-id-1"})
         h2 = Host.create('fake', 'my-group1', {"HOST_ID": "fake-id-2"})
         h3 = Host.create('fake', 'my-group2', {"HOST_ID": "fake-id-3"})
-        hosts = Host.list()
+        conf = {'MY_CONF': 1}
+        hosts = Host.list(conf=conf)
+        self.assertDictEqual(hosts[0].config, conf)
+        self.assertDictEqual(hosts[1].config, conf)
+        self.assertDictEqual(hosts[2].config, conf)
         self.assertItemsEqual([h.to_json() for h in hosts], [h1.to_json(), h2.to_json(), h3.to_json()])
         hosts = Host.list({'group': 'my-group1'})
         self.assertItemsEqual([h.to_json() for h in hosts], [h1.to_json(), h2.to_json()])
+
+    def test_storage_use_conf(self):
+        storage.MongoDBStorage({"MONGO_DATABASE": "alternative_host_manager"})._hosts_collection().remove()
+        h1 = Host.create('fake', 'my-group1', {
+            "HOST_ID": "fake-id-x", "MONGO_DATABASE": "alternative_host_manager"
+        })
+        stor = h1.storage()
+        self.assertEqual(stor.mongo_database, "alternative_host_manager")
+        h1.destroy()
+        db_host = Host.find('fake-id-x')
+        self.assertIsNone(db_host)
