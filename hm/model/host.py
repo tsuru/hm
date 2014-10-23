@@ -56,7 +56,7 @@ class Host(model.BaseModel):
         return model.storage(conf).list_hosts(filters)
 
     def destroy(self):
-        manager = managers.by_name(self.manager)
+        manager = managers.by_name(self.manager, self.config)
         try:
             manager.destroy_host(self.id)
         except Exception as e:

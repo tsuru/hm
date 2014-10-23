@@ -82,4 +82,4 @@ class LoadBalancer(model.BaseModel):
         self.hosts = [h for h in self.hosts if h.id != host.id]
 
     def _manager(self):
-        return lb_managers.by_name(self.manager)
+        return lb_managers.by_name(self.manager, self.config)
