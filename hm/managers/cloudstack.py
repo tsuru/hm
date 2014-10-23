@@ -16,11 +16,16 @@ class CloudStackManager(managers.BaseManager):
         secret_key = self.get_conf("CLOUDSTACK_SECRET_KEY")
         self.client = CloudStack(url, key, secret_key)
 
-    def create_host(self):
+    def create_host(self, name=None):
         group = self.get_conf("CLOUDSTACK_GROUP", "")
         user_data = self.get_user_data()
+        if group and name:
+            name = "{}_{}".format(group, name)
+        elif not name:
+            name = group
         data = {
             "group": group,
+            "displayname": name,
             "templateid": self.get_conf("CLOUDSTACK_TEMPLATE_ID"),
             "zoneid": self.get_conf("CLOUDSTACK_ZONE_ID"),
             "serviceofferingid": self.get_conf("CLOUDSTACK_SERVICE_OFFERING_ID"),

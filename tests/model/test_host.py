@@ -12,9 +12,9 @@ class FakeManager(managers.BaseManager):
     def __init__(self, config=None):
         super(FakeManager, self).__init__(config)
 
-    def create_host(self):
+    def create_host(self, name=None):
         host_id = self.get_conf('HOST_ID')
-        return Host(id=host_id, dns_name="{}.myhost.com".format(host_id))
+        return Host(id=host_id, dns_name="{}.{}.com".format(host_id, name))
 
     def destroy_host(self, id):
         if id == "explode":
@@ -32,13 +32,13 @@ class HostTestCase(unittest.TestCase):
         conf = {"HOST_ID": "fake-id"}
         host = Host.create('fake', 'my-group', conf)
         self.assertEqual(host.id, "fake-id")
-        self.assertEqual(host.dns_name, "fake-id.myhost.com")
+        self.assertEqual(host.dns_name, "fake-id.my-group.com")
         self.assertEqual(host.manager, "fake")
         self.assertEqual(host.group, "my-group")
         self.assertEqual(host.config, conf)
         db_host = Host.find('fake-id', conf=conf)
         self.assertEqual(db_host.id, "fake-id")
-        self.assertEqual(db_host.dns_name, "fake-id.myhost.com")
+        self.assertEqual(db_host.dns_name, "fake-id.my-group.com")
         self.assertEqual(db_host.manager, "fake")
         self.assertEqual(db_host.group, "my-group")
         self.assertEqual(db_host.config, conf)

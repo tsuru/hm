@@ -68,11 +68,44 @@ class CloudStackManagerTestCase(unittest.TestCase):
 
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
-        host = manager.create_host()
+        host = manager.create_host('xxx')
         self.assertEqual("abc123", host.id)
         self.assertEqual("10.0.0.1", host.dns_name)
         create_data = {
             "group": "feaas",
+            "displayname": "feaas_xxx",
+            "templateid": "abc123",
+            "zoneid": "zone1",
+            "serviceofferingid": "qwe123",
+            "networkids": "net-123",
+            "projectid": "project-123",
+        }
+        client_mock.deployVirtualMachine.assert_called_with(create_data)
+        client_mock.wait_for_job.assert_called_with('qwe321', 100)
+
+    def test_create_no_group(self):
+        self.config.update({
+            "CLOUDSTACK_TEMPLATE_ID": "abc123",
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "qwe123",
+            "CLOUDSTACK_ZONE_ID": "zone1",
+            "CLOUDSTACK_PROJECT_ID": "project-123",
+            "CLOUDSTACK_NETWORK_IDS": "net-123",
+        })
+
+        client_mock = mock.Mock()
+        client_mock.deployVirtualMachine.return_value = {"id": "abc123",
+                                                         "jobid": "qwe321"}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = client_mock
+        host = manager.create_host('xxx')
+        self.assertEqual("abc123", host.id)
+        self.assertEqual("10.0.0.1", host.dns_name)
+        create_data = {
+            "group": "",
+            "displayname": "xxx",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",
@@ -104,6 +137,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         self.assertEqual("10.0.0.1", host.dns_name)
         create_data = {
             "group": "feaas",
+            "displayname": "feaas",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",
@@ -133,6 +167,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         self.assertEqual("10.0.0.1", host.dns_name)
         create_data = {
             "group": "feaas",
+            "displayname": "feaas",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",
@@ -164,6 +199,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         self.assertEqual("192.168.1.1", host.dns_name)
         create_data = {
             "group": "feaas",
+            "displayname": "feaas",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",
@@ -194,6 +230,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         self.assertEqual("172.16.42.1", host.dns_name)
         create_data = {
             "group": "feaas",
+            "displayname": "feaas",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",
@@ -227,6 +264,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         self.assertEqual("exceeded 1 tries waiting for job qwe321", str(exc))
         create_data = {
             "group": "feaas",
+            "displayname": "feaas",
             "templateid": "abc123",
             "zoneid": "zone1",
             "serviceofferingid": "qwe123",

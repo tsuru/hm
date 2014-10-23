@@ -40,7 +40,7 @@ class Host(model.BaseModel):
     @classmethod
     def create(cls, manager_name, group, conf=None):
         manager = managers.by_name(manager_name, conf)
-        host = manager.create_host()
+        host = manager.create_host(name=group)
         host.manager = manager_name
         host.group = group
         host.config = conf
