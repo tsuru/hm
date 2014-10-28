@@ -8,6 +8,8 @@ import json
 import urllib
 import time
 
+from hm import log
+
 
 class CloudStack(object):
 
@@ -58,7 +60,9 @@ class CloudStack(object):
         self.request(args)
         data = self._http_get(self.value)
         key = command.lower() + "response"
-        return json.loads(data)[key]
+        response = json.loads(data)[key]
+        log.debug("GET {}: {}".format(self.value, response))
+        return response
 
     def wait_for_job(self, job_id, max_tries):
         status = 0
