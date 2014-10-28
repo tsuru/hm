@@ -50,7 +50,7 @@ class CloudStackManager(managers.BaseManager):
         if not vm.get("nic"):
             return ""
         network_name = self.get_conf("CLOUDSTACK_PUBLIC_NETWORK_NAME", None)
-        dns_name = vm["nic"][-1]["ipaddress"]
+        dns_name = vm["nic"][0]["ipaddress"]
         if network_name:
             for nic in vm["nic"]:
                 if nic["networkname"] == network_name:
