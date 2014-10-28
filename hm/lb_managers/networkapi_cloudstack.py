@@ -28,6 +28,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         self.networkapi_password = self.get_conf("NETWORKAPI_PASSWORD")
         self.create_network_id = self.get_conf("CLOUDSTACK_VIP_NETWORK_ID")
         self.create_project_id = self.get_conf("CLOUDSTACK_PROJECT_ID", None)
+        self.public_network_index = int(self.get_conf("CLOUDSTACK_PUBLIC_NETWORK_INDEX", 0))
         self.vip_config = VIPConfig(
             environment_p44=self.get_conf("NETWORKAPI_AMBIENTE_P44_TXT"),
             client=self.get_conf("NETWORKAPI_CLIENTE_TXT"),
@@ -79,7 +80,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         if getattr(lb, 'project_id', None):
             list_data["projectid"] = data["projectid"] = lb.project_id
         vms = self.cs_client.listVirtualMachines(list_data)["virtualmachine"]
-        data["nicid"] = vms[0]["nic"][0]["id"]
+        data["nicid"] = vms[0]["nic"][self.public_network_index]["id"]
         return data
 
     def _remove_vip(self, lb):

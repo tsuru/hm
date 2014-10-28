@@ -17,6 +17,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
             'CLOUDSTACK_SECRET_KEY': 'secret',
             'CLOUDSTACK_VIP_NETWORK_ID': 'net-098',
             'CLOUDSTACK_PROJECT_ID': 'proj-123',
+            'CLOUDSTACK_PUBLIC_NETWORK_INDEX': '1',
 
             'NETWORKAPI_ENDPOINT': 'http://networkapi.host',
             'NETWORKAPI_USER': 'tsuru',
@@ -45,6 +46,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
         self.assertEqual(manager.networkapi_endpoint, 'http://networkapi.host')
         self.assertEqual(manager.networkapi_user, 'tsuru')
         self.assertEqual(manager.networkapi_password, 'secret')
+        self.assertEqual(manager.public_network_index, 1)
         self.assertEqual(manager.vip_config.environment_p44, 'environment')
         self.assertEqual(manager.vip_config.client, 'client')
         self.assertEqual(manager.vip_config.finality, 'destination')
@@ -253,6 +255,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
     def test_attach_real(self, CloudStack):
+        self.conf.update({'CLOUDSTACK_PUBLIC_NETWORK_INDEX': '0'})
         vms = {"virtualmachine": [{"id": "abc123", "nic": [{"id": "def456"}]}]}
         CloudStack.return_value = cloudstack_client = mock.Mock()
         cloudstack_client.listVirtualMachines.return_value = vms
@@ -276,6 +279,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
     def test_attach_real_with_project_id(self, CloudStack):
+        self.conf.update({'CLOUDSTACK_PUBLIC_NETWORK_INDEX': '0'})
         vms = {"virtualmachine": [{"id": "abc123", "nic": [{"id": "def456"}]}]}
         CloudStack.return_value = cloudstack_client = mock.Mock()
         cloudstack_client.listVirtualMachines.return_value = vms
@@ -298,7 +302,31 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
             self.conf["CLOUDSTACK_SECRET_KEY"])
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
+    def test_attach_real_with_network_index(self, CloudStack):
+        vms = {"virtualmachine": [{"id": "abc123", "nic": [{"id": "def456"}, {"id": "second-id"}]}]}
+        CloudStack.return_value = cloudstack_client = mock.Mock()
+        cloudstack_client.listVirtualMachines.return_value = vms
+
+        manager = networkapi_cloudstack.NetworkApiCloudstackLB(self.conf)
+        lb = load_balancer.LoadBalancer(
+            "500", "myapp", "192.168.1.1",
+            ip_id="303",
+            project_id=None,
+        )
+        h = host.Host('abc123', 'name.host')
+        manager.attach_real(lb, h)
+        list_data = {"id": "abc123"}
+        cloudstack_client.listVirtualMachines.assert_called_with(list_data)
+        assoc_data = {"nicid": "second-id", "vipid": "500"}
+        cloudstack_client.associateGloboNetworkRealToVip.assert_called_with(assoc_data)
+        CloudStack.assert_called_with(
+            self.conf["CLOUDSTACK_API_URL"],
+            self.conf["CLOUDSTACK_API_KEY"],
+            self.conf["CLOUDSTACK_SECRET_KEY"])
+
+    @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
     def test_detach_real(self, CloudStack):
+        self.conf.update({'CLOUDSTACK_PUBLIC_NETWORK_INDEX': '0'})
         vms = {"virtualmachine": [{"id": "abc123", "nic": [{"id": "def456"}]}]}
         CloudStack.return_value = cloudstack_client = mock.Mock()
         cloudstack_client.listVirtualMachines.return_value = vms
@@ -321,6 +349,7 @@ class NetworkApiCloudstackLBTestCase(unittest.TestCase):
 
     @mock.patch("hm.lb_managers.networkapi_cloudstack.CloudStack")
     def test_detach_real_with_project_id(self, CloudStack):
+        self.conf.update({'CLOUDSTACK_PUBLIC_NETWORK_INDEX': '0'})
         vms = {"virtualmachine": [{"id": "abc123", "nic": [{"id": "def456"}]}]}
         CloudStack.return_value = cloudstack_client = mock.Mock()
         cloudstack_client.listVirtualMachines.return_value = vms
