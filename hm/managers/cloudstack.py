@@ -49,13 +49,8 @@ class CloudStackManager(managers.BaseManager):
     def _get_dns_name(self, vm):
         if not vm.get("nic"):
             return ""
-        network_name = self.get_conf("CLOUDSTACK_PUBLIC_NETWORK_NAME", None)
-        dns_name = vm["nic"][0]["ipaddress"]
-        if network_name:
-            for nic in vm["nic"]:
-                if nic["networkname"] == network_name:
-                    dns_name = nic["ipaddress"]
-                    break
+        network_index = int(self.get_conf("CLOUDSTACK_PUBLIC_NETWORK_INDEX", 0))
+        dns_name = vm["nic"][network_index]["ipaddress"]
         return dns_name
 
     def _wait_for_unit(self, vm_job, max_tries, project_id):

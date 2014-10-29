@@ -28,7 +28,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         self.networkapi_password = self.get_conf("NETWORKAPI_PASSWORD")
         self.create_network_id = self.get_conf("CLOUDSTACK_VIP_NETWORK_ID")
         self.create_project_id = self.get_conf("CLOUDSTACK_PROJECT_ID", None)
-        self.public_network_index = int(self.get_conf("CLOUDSTACK_PUBLIC_NETWORK_INDEX", 0))
+        self.public_network_index = int(self.get_conf("CLOUDSTACK_VIP_NETWORK_INDEX", 0))
         self.vip_config = VIPConfig(
             environment_p44=self.get_conf("NETWORKAPI_AMBIENTE_P44_TXT"),
             client=self.get_conf("NETWORKAPI_CLIENTE_TXT"),
@@ -41,7 +41,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
             maxconn=self.get_conf("VIP_MAXCONN", "1000"),
             business_area=self.get_conf("VIP_BUSINESS_AREA", ""),
             service_name=self.get_conf("VIP_SERVICE_NAME", ""),
-            port_mapping=self.get_conf("VIP_PORT_MAPPING", "80:8080")
+            port_mapping=self.get_conf("VIP_PORT_MAPPING").split(',')
         )
 
     def create_load_balancer(self, name):
@@ -132,7 +132,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
                                      reals=[],
                                      reals_prioritys=[],
                                      reals_weights=[],
-                                     ports=[vip_config.port_mapping])
+                                     ports=vip_config.port_mapping)
             vip_id = request["requisicao_vip"]["id"]
             log.debug(u"VIP request %s successfully created." % vip_id)
             client_vip.validate(vip_id)

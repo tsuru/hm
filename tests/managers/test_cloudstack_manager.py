@@ -175,21 +175,21 @@ class CloudStackManagerTestCase(unittest.TestCase):
         client_mock.deployVirtualMachine.assert_called_with(create_data)
         client_mock.wait_for_job.assert_called_with('qwe321', 100)
 
-    def test_create_public_network_name(self):
+    def test_create_public_network_index(self):
         self.config.update({
             "CLOUDSTACK_TEMPLATE_ID": "abc123",
             "CLOUDSTACK_SERVICE_OFFERING_ID": "qwe123",
             "CLOUDSTACK_ZONE_ID": "zone1",
             "CLOUDSTACK_GROUP": "feaas",
-            "CLOUDSTACK_PUBLIC_NETWORK_NAME": "NOPOWER",
+            "CLOUDSTACK_PUBLIC_NETWORK_INDEX": "1",
         })
 
         client_mock = mock.Mock()
         client_mock.deployVirtualMachine.return_value = {"id": "abc123",
                                                          "jobid": "qwe321"}
-        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1", "networkname": "POWERNET"},
-                                      {"ipaddress": "192.168.1.1", "networkname": "NOPOWER"},
-                                      {"ipaddress": "172.16.42.1", "networkname": "KPOWER"}]}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"},
+                                      {"ipaddress": "192.168.1.1"},
+                                      {"ipaddress": "172.16.42.1"}]}
         client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
 
         manager = cloudstack.CloudStackManager(self.config)
@@ -207,7 +207,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         client_mock.deployVirtualMachine.assert_called_with(create_data)
         client_mock.wait_for_job.assert_called_with('qwe321', 100)
 
-    def test_create_public_multi_nic_no_network_name(self):
+    def test_create_public_multi_nic_no_network_index(self):
         self.config.update({
             "CLOUDSTACK_TEMPLATE_ID": "abc123",
             "CLOUDSTACK_SERVICE_OFFERING_ID": "qwe123",
@@ -218,16 +218,16 @@ class CloudStackManagerTestCase(unittest.TestCase):
         client_mock = mock.Mock()
         client_mock.deployVirtualMachine.return_value = {"id": "abc123",
                                                          "jobid": "qwe321"}
-        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1", "networkname": "POWERNET"},
-                                      {"ipaddress": "192.168.1.1", "networkname": "NOPOWER"},
-                                      {"ipaddress": "172.16.42.1", "networkname": "KPOWER"}]}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"},
+                                      {"ipaddress": "192.168.1.1"},
+                                      {"ipaddress": "172.16.42.1"}]}
         client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
 
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
         host = manager.create_host()
         self.assertEqual("abc123", host.id)
-        self.assertEqual("172.16.42.1", host.dns_name)
+        self.assertEqual("10.0.0.1", host.dns_name)
         create_data = {
             "group": "feaas",
             "displayname": "feaas",
