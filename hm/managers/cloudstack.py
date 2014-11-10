@@ -16,7 +16,7 @@ class CloudStackManager(managers.BaseManager):
         secret_key = self.get_conf("CLOUDSTACK_SECRET_KEY")
         self.client = CloudStack(url, key, secret_key)
 
-    def create_host(self, name=None):
+    def create_host(self, name=None, alternative_id=0):
         group = self.get_conf("CLOUDSTACK_GROUP", "")
         user_data = self.get_user_data()
         if group and name:
@@ -26,22 +26,22 @@ class CloudStackManager(managers.BaseManager):
         data = {
             "group": group,
             "displayname": name,
-            "templateid": self.get_conf("CLOUDSTACK_TEMPLATE_ID"),
-            "zoneid": self.get_conf("CLOUDSTACK_ZONE_ID"),
-            "serviceofferingid": self.get_conf("CLOUDSTACK_SERVICE_OFFERING_ID"),
+            "templateid": self._get_alternate_conf("CLOUDSTACK_TEMPLATE_ID", alternative_id),
+            "zoneid": self._get_alternate_conf("CLOUDSTACK_ZONE_ID", alternative_id),
+            "serviceofferingid": self._get_alternate_conf("CLOUDSTACK_SERVICE_OFFERING_ID", alternative_id),
         }
         if user_data:
             data["userdata"] = self.client.encode_user_data(user_data)
-        project_id = self.get_conf("CLOUDSTACK_PROJECT_ID", None)
+        project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", alternative_id, None)
         if project_id:
             data["projectid"] = project_id
-        network_ids = self.get_conf("CLOUDSTACK_NETWORK_IDS", None)
+        network_ids = self._get_alternate_conf("CLOUDSTACK_NETWORK_IDS", alternative_id, None)
         if network_ids:
             data["networkids"] = network_ids
         vm_job = self.client.deployVirtualMachine(data)
         max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
         vm = self._wait_for_unit(vm_job, max_tries, project_id)
-        return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm))
+        return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm), alternative_id=alternative_id)
 
     def destroy_host(self, host_id):
         self.client.destroyVirtualMachine({"id": host_id})
@@ -61,5 +61,11 @@ class CloudStackManager(managers.BaseManager):
         vms = self.client.listVirtualMachines(data)
         return vms["virtualmachine"][0]
 
+    def _get_alternate_conf(self, name, alternative_id, default=None):
+        env_var = "{}_{}".format(name, alternative_id)
+        val = self.get_conf(env_var, default)
+        if val is not None:
+            return val
+        return self.get_conf(name, default)
 
 managers.register('cloudstack', CloudStackManager)

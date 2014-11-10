@@ -12,9 +12,9 @@ class FakeManager(managers.BaseManager):
     def __init__(self, config=None):
         super(FakeManager, self).__init__(config)
 
-    def create_host(self, name=None):
+    def create_host(self, name=None, alternative_id=0):
         host_id = self.get_conf('HOST_ID')
-        return Host(id=host_id, dns_name="{}.{}.com".format(host_id, name))
+        return Host(id=host_id, dns_name="{}.{}.com".format(host_id, name), alternative_id=alternative_id)
 
     def destroy_host(self, id):
         if id == "explode":
@@ -36,12 +36,41 @@ class HostTestCase(unittest.TestCase):
         self.assertEqual(host.manager, "fake")
         self.assertEqual(host.group, "my-group")
         self.assertEqual(host.config, conf)
+        self.assertEqual(host.alternative_id, 0)
         db_host = Host.find('fake-id', conf=conf)
         self.assertEqual(db_host.id, "fake-id")
         self.assertEqual(db_host.dns_name, "fake-id.my-group.com")
         self.assertEqual(db_host.manager, "fake")
         self.assertEqual(db_host.group, "my-group")
         self.assertEqual(db_host.config, conf)
+        self.assertEqual(db_host.alternative_id, 0)
+
+    def test_create_alternatives(self):
+        conf = {"HM_ALTERNATIVE_CONFIG_COUNT": "3"}
+        conf.update({"HOST_ID": "fake-1"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        conf.update({"HOST_ID": "fake-2"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        conf.update({"HOST_ID": "fake-3"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 2)
+        conf.update({"HOST_ID": "fake-4"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        conf.update({"HOST_ID": "fake-5"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        conf.update({"HOST_ID": "fake-6"})
+        host = Host.create('fake', 'another-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        hosts = Host.list(filters={'alternative_id': 0})
+        self.assertEqual(len(hosts), 3)
+        hosts = Host.list(filters={'alternative_id': 1})
+        self.assertEqual(len(hosts), 2)
+        hosts = Host.list(filters={'alternative_id': 2})
+        self.assertEqual(len(hosts), 1)
 
     def test_destroy(self):
         host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})

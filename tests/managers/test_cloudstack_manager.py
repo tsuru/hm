@@ -272,6 +272,57 @@ class CloudStackManagerTestCase(unittest.TestCase):
         client_mock.wait_for_job.assert_called_with('qwe321', 1)
         client_mock.deployVirtualMachine.assert_called_with(create_data)
 
+    def test_create_alternatives(self):
+        self.config.update({
+            "CLOUDSTACK_GROUP": "feaas",
+            "CLOUDSTACK_TEMPLATE_ID": "template-base",
+            "CLOUDSTACK_PROJECT_ID": "project-base",
+
+            "CLOUDSTACK_ZONE_ID_0": "zone0",
+            "CLOUDSTACK_NETWORK_IDS_0": "net0",
+            "CLOUDSTACK_SERVICE_OFFERING_ID_0": "offering0",
+
+            "CLOUDSTACK_ZONE_ID_1": "zone1",
+            "CLOUDSTACK_NETWORK_IDS_1": "net1",
+            "CLOUDSTACK_SERVICE_OFFERING_ID_1": "offering1",
+            "CLOUDSTACK_PROJECT_ID_1": "project1",
+        })
+
+        client_mock = mock.Mock()
+        client_mock.deployVirtualMachine.return_value = {"id": "abc123",
+                                                         "jobid": "qwe321"}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = client_mock
+        host = manager.create_host('xxx', alternative_id=0)
+        self.assertEqual("abc123", host.id)
+        self.assertEqual("10.0.0.1", host.dns_name)
+        create_data = {
+            "group": "feaas",
+            "displayname": "feaas_xxx",
+            "templateid": "template-base",
+            "zoneid": "zone0",
+            "serviceofferingid": "offering0",
+            "networkids": "net0",
+            "projectid": "project-base",
+        }
+        client_mock.deployVirtualMachine.assert_called_with(create_data)
+        client_mock.wait_for_job.assert_called_with('qwe321', 100)
+
+        host = manager.create_host('xxx', alternative_id=1)
+        create_data = {
+            "group": "feaas",
+            "displayname": "feaas_xxx",
+            "templateid": "template-base",
+            "zoneid": "zone1",
+            "serviceofferingid": "offering1",
+            "networkids": "net1",
+            "projectid": "project1",
+        }
+        client_mock.deployVirtualMachine.assert_called_with(create_data)
+
     def destroy_host(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
