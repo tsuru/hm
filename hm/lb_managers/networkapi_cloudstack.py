@@ -26,9 +26,8 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         self.networkapi_endpoint = self.get_conf("NETWORKAPI_ENDPOINT")
         self.networkapi_user = self.get_conf("NETWORKAPI_USER")
         self.networkapi_password = self.get_conf("NETWORKAPI_PASSWORD")
-        self.create_network_id = self.get_conf("CLOUDSTACK_VIP_NETWORK_ID")
         self.create_project_id = self.get_conf("CLOUDSTACK_PROJECT_ID", None)
-        self.public_network_index = int(self.get_conf("CLOUDSTACK_VIP_NETWORK_INDEX", 0))
+        self.vip_network_index = int(self.get_conf("CLOUDSTACK_VIP_NETWORK_INDEX", 0))
         self.vip_config = VIPConfig(
             environment_p44=self.get_conf("NETWORKAPI_AMBIENTE_P44_TXT"),
             client=self.get_conf("NETWORKAPI_CLIENTE_TXT"),
@@ -46,12 +45,7 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
 
     def create_load_balancer(self, name):
         vip_id, ip_id, address = self._create_vip(name, self.vip_config)
-        data = {
-            "networkid": self.create_network_id,
-            "projectid": self.create_project_id,
-            "vipid": vip_id
-        }
-        self.cs_client.addGloboNetworkVipToAccount(data)
+
         return load_balancer.LoadBalancer(
             vip_id, name, address,
             ip_id=ip_id,
@@ -67,21 +61,29 @@ class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
         return self._remove_vip(lb)
 
     def attach_real(self, lb, host):
-        data = self._get_association_data(lb, host)
-        self.cs_client.associateGloboNetworkRealToVip(data)
+        real_data, network_data = self._get_association_data(lb, host)
+        self.cs_client.addGloboNetworkVipToAccount(network_data)
+        self.cs_client.associateGloboNetworkRealToVip(real_data)
 
     def detach_real(self, lb, host):
-        data = self._get_association_data(lb, host)
-        self.cs_client.disassociateGloboNetworkRealFromVip(data)
+        real_data, _ = self._get_association_data(lb, host)
+        self.cs_client.disassociateGloboNetworkRealFromVip(real_data)
 
     def _get_association_data(self, lb, host):
-        data = {"vipid": lb.id}
+        real_data = {"vipid": lb.id}
+        network_data = {"vipid": lb.id}
         list_data = {"id": host.id}
+
         if getattr(lb, 'project_id', None):
-            list_data["projectid"] = data["projectid"] = lb.project_id
+            list_data["projectid"] = \
+                real_data["projectid"] = \
+                network_data["projectid"] = lb.project_id
         vms = self.cs_client.listVirtualMachines(list_data)["virtualmachine"]
-        data["nicid"] = vms[0]["nic"][self.public_network_index]["id"]
-        return data
+        nic = vms[0]["nic"][self.vip_network_index]
+
+        real_data["nicid"] = nic["id"]
+        network_data["networkid"] = nic["networkid"]
+        return real_data, network_data
 
     def _remove_vip(self, lb):
         client_vip = Vip.Vip(
