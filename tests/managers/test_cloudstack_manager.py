@@ -175,6 +175,36 @@ class CloudStackManagerTestCase(unittest.TestCase):
         client_mock.deployVirtualMachine.assert_called_with(create_data)
         client_mock.wait_for_job.assert_called_with('qwe321', 100)
 
+    def test_create_invalid_response(self):
+        self.config.update({
+            "CLOUDSTACK_TEMPLATE_ID": "abc123",
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "qwe123",
+            "CLOUDSTACK_ZONE_ID": "zone1",
+            "CLOUDSTACK_GROUP": "feaas",
+        })
+
+        client_mock = mock.Mock()
+        client_mock.deployVirtualMachine.return_value = {"error": "xxx"}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = client_mock
+        with self.assertRaises(cloudstack.CloudStackException) as ctx:
+            manager.create_host()
+        exc = ctx.exception
+        self.assertRegexpMatches(
+            str(exc), r"unexpected response from deployVirtualMachine\({.+}\)"
+            ", expected jobid key, got: {'error': 'xxx'}")
+        create_data = {
+            "group": "feaas",
+            "displayname": "feaas",
+            "templateid": "abc123",
+            "zoneid": "zone1",
+            "serviceofferingid": "qwe123",
+        }
+        client_mock.deployVirtualMachine.assert_called_with(create_data)
+
     def test_create_public_network_index(self):
         self.config.update({
             "CLOUDSTACK_TEMPLATE_ID": "abc123",

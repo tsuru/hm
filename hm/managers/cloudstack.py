@@ -40,6 +40,10 @@ class CloudStackManager(managers.BaseManager):
             data["networkids"] = network_ids
         vm_job = self.client.deployVirtualMachine(data)
         max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
+        if not vm_job.get("jobid"):
+            raise CloudStackException(
+                "unexpected response from deployVirtualMachine({}), expected jobid key, got: {}".format(
+                    repr(data), repr(vm_job)))
         vm = self._wait_for_unit(vm_job, max_tries, project_id)
         return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm), alternative_id=alternative_id)
 
@@ -67,5 +71,10 @@ class CloudStackManager(managers.BaseManager):
         if val is not None:
             return val
         return self.get_conf(name, default)
+
+
+class CloudStackException(Exception):
+    pass
+
 
 managers.register('cloudstack', CloudStackManager)
