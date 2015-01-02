@@ -13,6 +13,7 @@ README = codecs.open('README.rst', encoding='utf-8').read()
 
 setup(
     name="tsuru-hm",
+    url="https://github.com/tsuru/hm",
     version=__version__,
     description="Host manager library for tsuru PaaS services",
     long_description=README,
