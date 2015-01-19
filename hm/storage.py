@@ -14,10 +14,16 @@ class MongoDBStorage(object):
 
     def __init__(self, conf=None):
         self.config = conf
-        self.mongo_uri = config.get_config('MONGO_URI', 'mongodb://localhost:27017/', conf)
-        self.mongo_database = config.get_config('MONGO_DATABASE', 'host_manager', conf)
+        self.mongo_uri = config.get_config('DBAAS_MONGODB_ENDPOINT', None, conf)
+        if not self.mongo_uri:
+            self.mongo_uri = config.get_config('MONGO_URI', 'mongodb://localhost:27017/', conf)
         client = pymongo.MongoClient(self.mongo_uri)
-        self.db = client[self.mongo_database]
+        try:
+            self.db = client.get_default_database()
+            self.mongo_database = self.db.name
+        except pymongo.errors.ConfigurationError:
+            self.mongo_database = config.get_config('MONGO_DATABASE', 'host_manager', conf)
+            self.db = client[self.mongo_database]
 
     def store_host(self, h):
         self._hosts_collection().insert(h.to_json())

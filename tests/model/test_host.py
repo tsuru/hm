@@ -99,13 +99,47 @@ class HostTestCase(unittest.TestCase):
         hosts = Host.list({'group': 'my-group1'})
         self.assertItemsEqual([h.to_json() for h in hosts], [h1.to_json(), h2.to_json()])
 
-    def test_storage_use_conf(self):
+    def test_storage_use_database_conf(self):
         storage.MongoDBStorage({"MONGO_DATABASE": "alternative_host_manager"})._hosts_collection().remove()
         h1 = Host.create('fake', 'my-group1', {
             "HOST_ID": "fake-id-x", "MONGO_DATABASE": "alternative_host_manager"
         })
         stor = h1.storage()
         self.assertEqual(stor.mongo_database, "alternative_host_manager")
+        self.assertEqual(stor.db.name, "alternative_host_manager")
+        h1.destroy()
+        db_host = Host.find('fake-id-x')
+        self.assertIsNone(db_host)
+
+    def test_storage_use_uri_conf(self):
+        conf = {
+            "DBAAS_MONGODB_ENDPOINT": "mongodb://127.0.0.1:27017/some_other_db",
+            "MONGO_URI": "mongodb://127.0.0.1:27017/ignored",
+        }
+        storage.MongoDBStorage(conf)._hosts_collection().remove()
+        host_config = {
+            "HOST_ID": "fake-id-x"
+        }
+        host_config.update(conf)
+        h1 = Host.create('fake', 'my-group1', host_config)
+        stor = h1.storage()
+        self.assertEqual(stor.mongo_database, "some_other_db")
+        self.assertEqual(stor.db.name, "some_other_db")
+        h1.destroy()
+        db_host = Host.find('fake-id-x')
+        self.assertIsNone(db_host)
+        conf = {
+            "MONGO_URI": "mongodb://127.0.0.1:27017/now_used",
+        }
+        storage.MongoDBStorage(conf)._hosts_collection().remove()
+        host_config = {
+            "HOST_ID": "fake-id-x"
+        }
+        host_config.update(conf)
+        h1 = Host.create('fake', 'my-group1', host_config)
+        stor = h1.storage()
+        self.assertEqual(stor.mongo_database, "now_used")
+        self.assertEqual(stor.db.name, "now_used")
         h1.destroy()
         db_host = Host.find('fake-id-x')
         self.assertIsNone(db_host)
