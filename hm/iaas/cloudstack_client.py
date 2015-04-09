@@ -11,6 +11,11 @@ import time
 from hm import log
 
 
+JOB_PENDING = 0
+JOB_SUCCESS = 1
+JOB_ERROR = 2
+
+
 class CloudStack(object):
 
     def __init__(self, api_url, api_key, secret):
@@ -65,17 +70,20 @@ class CloudStack(object):
         return response
 
     def wait_for_job(self, job_id, max_tries):
-        status = 0
+        status = JOB_PENDING
         tries = 0
+        result = None
         while tries < max_tries:
             result = self.queryAsyncJobResult({"jobid": job_id})
             status = result["jobstatus"]
-            if status != 0:
+            if status != JOB_PENDING:
                 break
             time.sleep(1)
             tries += 1
-        if status == 0:
+        if status == JOB_PENDING:
             raise MaxTryWaitingForJobError(max_tries, job_id)
+        if status == JOB_ERROR:
+            raise Exception("async job error: {}".format(result))
 
 
 class MaxTryWaitingForJobError(Exception):
