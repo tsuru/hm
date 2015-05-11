@@ -51,21 +51,27 @@ class CloudStack(object):
     def __getattr__(self, name):
         def handler(*args, **kwargs):
             if kwargs:
-                return self._make_request(name, kwargs)
-            return self._make_request(name, args[0])
+                return self.make_request(name, kwargs)
+            return self.make_request(name, args[0])
         return handler
 
     def _http_get(self, url):
         response = urllib.urlopen(url)
         return response.read()
 
-    def _make_request(self, command, args):
+    def make_request(self, command, args, response_key=None):
         args["response"] = "json"
         args["command"] = command
         self.request(args)
         data = self._http_get(self.value)
         key = command.lower() + "response"
-        response = json.loads(data)[key]
+        rsp_data = json.loads(data)
+        response = rsp_data.get(key)
+        if response is None and response_key:
+            key = response_key
+            response = rsp_data.get(key)
+        if response is None or 'errorcode' in response:
+            raise InvalidResponse("Invalid response running '{} {}': {}".format(command, args, data))
         log.debug("GET {}: {}".format(self.value, response))
         return response
 
@@ -84,6 +90,13 @@ class CloudStack(object):
             raise MaxTryWaitingForJobError(max_tries, job_id)
         if status == JOB_ERROR:
             raise Exception("async job error: {}".format(result))
+        return result
+
+
+class InvalidResponse(Exception):
+
+    def __init__(self, msg):
+        super(InvalidResponse, self).__init__(msg)
 
 
 class MaxTryWaitingForJobError(Exception):
