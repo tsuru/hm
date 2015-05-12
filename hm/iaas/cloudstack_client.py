@@ -29,6 +29,7 @@ class CloudStack(object):
     def request(self, args):
         args["apiKey"] = self.api_key
         self.params = []
+        self.sig_params = []
         self._sort_request(args)
         self._create_signature()
         self._build_post_request()
@@ -36,11 +37,13 @@ class CloudStack(object):
     def _sort_request(self, args):
         keys = sorted(args.keys())
         for key in keys:
+            self.sig_params.append(key.lower() + "=" + urllib.quote_plus(args[key]).lower().replace('+', '%20'))
             self.params.append(key + "=" + urllib.quote_plus(args[key]))
 
     def _create_signature(self):
         self.query = "&".join(self.params)
-        digest = hmac.new(self.secret, msg=self.query.lower(),
+        self.sig_query = "&".join(self.sig_params)
+        digest = hmac.new(self.secret, msg=self.sig_query,
                           digestmod=hashlib.sha1).digest()
         self.signature = base64.b64encode(digest)
 
@@ -89,14 +92,16 @@ class CloudStack(object):
         if status == JOB_PENDING:
             raise MaxTryWaitingForJobError(max_tries, job_id)
         if status == JOB_ERROR:
-            raise Exception("async job error: {}".format(result))
+            raise AsyncJobError("async job error: {}".format(result))
         return result
 
 
-class InvalidResponse(Exception):
+class AsyncJobError(Exception):
+    pass
 
-    def __init__(self, msg):
-        super(InvalidResponse, self).__init__(msg)
+
+class InvalidResponse(Exception):
+    pass
 
 
 class MaxTryWaitingForJobError(Exception):

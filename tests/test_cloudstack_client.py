@@ -17,6 +17,30 @@ class CloudStackClientTestCase(unittest.TestCase):
         expected = base64.b64encode("some user data")
         self.assertEqual(expected, client.encode_user_data("some user data"))
 
+    def test_signature(self):
+        client = cloudstack_client.CloudStack(
+            "https://somewhere.com:443/client/api",
+            "aaBB_1cC_JDSLkdjaskjLKSDJdlKDSJkldKDLSKdKsldjSKL_wDJKHSskjdshajkHDKJSHksjdhjsjsdjk_dsZ",
+            "aaB-D1cCSJDSLkdjask-LKSDJdlKDSJ_ldKDLSKdKsldjSKLdwDJKHSskjdshajkHDKJSHksjdhjsjsdjkpdsZ")
+        client.request({
+            'command': 'createLBHealthCheckPolicy',
+            'response': 'json',
+            'lbruleid': '99999999-6eac-42fe-845f-814ba9e29d2a',
+            'projectid': '11111111-3176-415f-8007-a47dc11ad8c6',
+            'pingpath': 'GET /_nginx_healthcheck/',
+        })
+        self.assertEqual(
+            client.value,
+            'https://somewhere.com:443/client/api?'
+            'apiKey=aaBB_1cC_JDSLkdjaskjLKSDJdlKDSJkldKDLSKdKsldjSKL_wDJKHSskjdshajkHDKJSHksjdhjsjsdjk_dsZ&'
+            'command=createLBHealthCheckPolicy&'
+            'lbruleid=99999999-6eac-42fe-845f-814ba9e29d2a&'
+            'pingpath=GET+%2F_nginx_healthcheck%2F&'
+            'projectid=11111111-3176-415f-8007-a47dc11ad8c6&'
+            'response=json&'
+            'signature=r73%2BEc%2FFSYKE0xB4qt3U37UYCsQ%3D'
+        )
+
     @mock.patch('hm.iaas.cloudstack_client.urllib')
     def test_wait_for_job(self, urllib):
         client = cloudstack_client.CloudStack("http://localhost", "api_key", "secret!")
