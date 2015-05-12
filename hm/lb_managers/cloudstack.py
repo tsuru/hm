@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from hm import lb_managers
+import sys
+
+from hm import lb_managers, log
 from hm.model import load_balancer
-from hm.iaas.cloudstack_client import CloudStack
+from hm.iaas.cloudstack_client import CloudStack, AsyncJobError
 
 
 class CloudstackLB(lb_managers.BaseLBManager):
@@ -39,16 +41,24 @@ class CloudstackLB(lb_managers.BaseLBManager):
             try:
                 self._create_lb_hc(lb_id)
             except:
-                self._delete_lb_rule(lb_id, self.project_id)
-                raise
+                exc_info = sys.exc_info()
+                try:
+                    self._delete_lb_rule(lb_id, self.project_id)
+                except:
+                    log.exception('error in rollback trying to delete lb rule')
+                raise exc_info[0], exc_info[1], exc_info[2]
 
             return load_balancer.LoadBalancer(
                 lb_id, name, address,
                 project_id=self.project_id,
                 ip_id=ip_id)
         except:
-            self._dissociate_ip(ip_id, self.project_id)
-            raise
+            exc_info = sys.exc_info()
+            try:
+                self._dissociate_ip(ip_id, self.project_id)
+            except:
+                log.exception('error in rollback trying to dissociate ip')
+            raise exc_info[0], exc_info[1], exc_info[2]
 
     def destroy_load_balancer(self, lb):
         self._delete_lb_rule(lb.id, lb.project_id)
@@ -74,7 +84,10 @@ class CloudstackLB(lb_managers.BaseLBManager):
             nic = vms[0]["nic"][self.lb_network_index]
             network_params["networkids"] = nic["networkid"]
             net_rsp = self.cs_client.make_request(self.assign_network_command, network_params)
-            self._wait_if_jobid(net_rsp)
+            try:
+                self._wait_if_jobid(net_rsp)
+            except AsyncJobError:
+                log.exception('ignored error assigning network to lb')
         rsp = self.cs_client.assignToLoadBalancerRule(assign_params)
         self._wait_if_jobid(rsp)
 
