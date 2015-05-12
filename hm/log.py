@@ -16,6 +16,10 @@ def error(*args):
     _log.error(*args)
 
 
+def exception(*args):
+    _log.exception(*args)
+
+
 def set_handler(handler):
     _log.removeHandler(_default_handler)
     _log.addHandler(handler)
