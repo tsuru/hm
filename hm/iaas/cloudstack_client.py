@@ -37,7 +37,8 @@ class CloudStack(object):
     def _sort_request(self, args):
         keys = sorted(args.keys())
         for key in keys:
-            self.sig_params.append(key.lower() + "=" + urllib.quote_plus(args[key]).lower().replace('+', '%20'))
+            self.sig_params.append(
+                key.lower() + "=" + urllib.quote_plus(args[key]).lower().replace('+', '%20'))
             self.params.append(key + "=" + urllib.quote_plus(args[key]))
 
     def _create_signature(self):

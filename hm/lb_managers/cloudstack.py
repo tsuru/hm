@@ -120,7 +120,6 @@ class CloudstackLB(lb_managers.BaseLBManager):
         return ip_rsp['id']
 
     def _create_lb_rule(self, ip_id, name):
-        ip_id = self._associate_ip()
         public, private, additional = self._slit_ports()
         if self.lb_domain:
             name = '{}.{}'.format(name, self.lb_domain)
