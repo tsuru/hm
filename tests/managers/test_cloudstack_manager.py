@@ -1,4 +1,4 @@
-# Copyright 2014 hm authors. All rights reserved.
+# Copyright 2015 hm authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
@@ -82,6 +82,50 @@ class CloudStackManagerTestCase(unittest.TestCase):
         }
         client_mock.deployVirtualMachine.assert_called_with(create_data)
         client_mock.wait_for_job.assert_called_with('qwe321', 100)
+
+    def test_create_with_tags(self):
+        self.config.update({
+            "CLOUDSTACK_TEMPLATE_ID": "abc123",
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "qwe123",
+            "CLOUDSTACK_ZONE_ID": "zone1",
+            "CLOUDSTACK_PROJECT_ID": "project-123",
+            "CLOUDSTACK_NETWORK_IDS": "net-123",
+            "CLOUDSTACK_GROUP": "feaas",
+            "CLOUDSTACK_TAGS": "Name:something,monitor:1,wait=wat",
+        })
+
+        client_mock = mock.Mock()
+        client_mock.deployVirtualMachine.return_value = {"id": "abc123",
+                                                         "jobid": "qwe321"}
+        vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = client_mock
+        host = manager.create_host('xxx')
+        self.assertEqual("abc123", host.id)
+        self.assertEqual("10.0.0.1", host.dns_name)
+        create_data = {
+            "group": "feaas",
+            "displayname": "feaas_xxx",
+            "templateid": "abc123",
+            "zoneid": "zone1",
+            "serviceofferingid": "qwe123",
+            "networkids": "net-123",
+            "projectid": "project-123",
+        }
+        client_mock.deployVirtualMachine.assert_called_with(create_data)
+        client_mock.wait_for_job.assert_called_with('qwe321', 100)
+        tag_data = {
+            "resourcetype": "UserVm",
+            "resourceids": "abc123",
+            "projectid": "project-123",
+            "tags[1].key": "Name",
+            "tags[1].value": "something",
+            "tags[2].key": "monitor",
+            "tags[2].value": "1",
+        }
+        client_mock.createTags.assert_called_with(tag_data)
 
     def test_create_no_group(self):
         self.config.update({
