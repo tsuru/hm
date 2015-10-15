@@ -28,6 +28,7 @@ setup(
         "boto==2.25.0",
         "pymongo==2.6.3",
         "requests==2.4.3",
+        "GloboNetworkAPI==0.2.2",
     ],
     extras_require={
         'tests': [
