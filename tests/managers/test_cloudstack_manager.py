@@ -91,7 +91,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
             "CLOUDSTACK_PROJECT_ID": "project-123",
             "CLOUDSTACK_NETWORK_IDS": "net-123",
             "CLOUDSTACK_GROUP": "feaas",
-            "CLOUDSTACK_TAGS": "Name:something,monitor:1,wait=wat",
+            "HOST_TAGS": "Name:something,monitor:1,wait=wat",
         })
 
         client_mock = mock.Mock()

@@ -45,7 +45,7 @@ class CloudStackManager(managers.BaseManager):
                 "unexpected response from deployVirtualMachine({}), expected jobid key, got: {}".format(
                     repr(data), repr(vm_job)))
         vm = self._wait_for_unit(vm_job, max_tries, project_id)
-        tags = self.get_conf("CLOUDSTACK_TAGS", "")
+        tags = self.get_conf("HOST_TAGS", "")
         if tags:
             self._tag_vm(tags.split(","), vm, project_id)
         return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm), alternative_id=alternative_id)
