@@ -32,10 +32,10 @@ setup(
     ],
     extras_require={
         'tests': [
-            "mock",
-            "flake8",
-            "coverage",
-            "freezegun",
+            "mock==1.0.1",
+            "flake8==2.1.0",
+            "coverage==3.7.1",
+            "freezegun==0.2.8",
         ]
     },
 )
