@@ -72,6 +72,9 @@ class CloudStackManager(managers.BaseManager):
     def destroy_host(self, host_id):
         self.client.destroyVirtualMachine({"id": host_id})
 
+    def restore_host(self, host_id):
+        self.client.restoreVirtualMachine({"virtualmachineid": host_id})
+
     def _get_dns_name(self, vm):
         if not vm.get("nic"):
             return ""
