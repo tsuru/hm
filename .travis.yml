@@ -1,0 +1,14 @@
+language: python
+sudo: false
+python: "2.7"
+install:
+  - make test_deps
+script: make test
+services:
+  - mongodb
+notifications:
+  email:
+    recipients:
+      - tsuru@corp.globo.com
+    on_success: change
+    on_failure: change
