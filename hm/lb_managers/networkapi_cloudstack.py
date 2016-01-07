@@ -2,16 +2,16 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+from hm import lb_managers, log
+from hm.model import load_balancer
+from hm.iaas.cloudstack_client import CloudStack
+
 network_api_available = True
 try:
     from networkapiclient import EnvironmentVIP, Ip, Vip
     from networkapiclient.exception import IpNaoExisteError
 except ImportError:
     network_api_available = False
-
-from hm import lb_managers, log
-from hm.model import load_balancer
-from hm.iaas.cloudstack_client import CloudStack
 
 
 class NetworkApiCloudstackLB(lb_managers.BaseLBManager):
