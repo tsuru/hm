@@ -6,6 +6,7 @@ import unittest
 
 from hm import managers, storage
 from hm.model.host import Host
+from mock import patch, call
 
 
 class FakeManager(managers.BaseManager):
@@ -19,6 +20,11 @@ class FakeManager(managers.BaseManager):
     def destroy_host(self, id):
         if id == "explode":
             raise Exception("failure to destroy")
+
+    def restore_host(self, id):
+        if id == "explode":
+            raise Exception("failure to restore")
+
 
 managers.register('fake', FakeManager)
 
@@ -79,12 +85,30 @@ class HostTestCase(unittest.TestCase):
         db_host = Host.find('fake-id')
         self.assertIsNone(db_host)
 
-    def test_destroy_ignores_manager_error(self):
+    @patch("hm.log.error")
+    def test_destroy_ignores_manager_error(self, log):
         host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
         self.assertEqual(host.id, "explode")
         host.destroy()
+        self.assertEqual(log.call_args, call("Error trying to destroy host 'explode' "
+                                             "in 'fake': failure to destroy"))
         db_host = Host.find('explode')
         self.assertIsNone(db_host)
+
+    def test_restore(self):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        self.assertEqual(host.id, "fake-id")
+        host.restore()
+
+    @patch("hm.log.error")
+    def test_restore_ignores_manager_error(self, log):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
+        self.assertEqual(host.id, "explode")
+        host.restore()
+        self.assertEqual(log.call_args, call("Error trying to restore host 'explode' "
+                                             "in 'fake': failure to restore"))
+        db_host = Host.find('explode')
+        self.assertEqual(db_host.id, "explode")
 
     def test_list(self):
         h1 = Host.create('fake', 'my-group1', {"HOST_ID": "fake-id-1"})

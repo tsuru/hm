@@ -9,6 +9,7 @@ import pymongo.errors
 from hm import lb_managers, storage
 from hm.model.host import Host
 from hm.model.load_balancer import LoadBalancer
+from mock import patch, call
 
 
 class FakeManager(lb_managers.BaseLBManager):
@@ -68,11 +69,14 @@ class LoadBalancerTestCase(unittest.TestCase):
         db_lb = LoadBalancer.find('my-lb')
         self.assertIsNone(db_lb)
 
-    def test_destroy_ignores_manager_exception(self):
+    @patch("hm.log.error")
+    def test_destroy_ignores_manager_exception(self, log):
         LoadBalancer.create('fake', 'my-lb', {'LB_ID': 'explode'})
         db_lb = LoadBalancer.find('my-lb')
         self.assertEqual(db_lb.id, 'explode')
         db_lb.destroy()
+        self.assertEqual(log.call_args, call("Error trying to destroy load balancer name: 'my-lb' "
+                                             "id: 'explode' in 'fake': failure to destroy"))
         db_lb = LoadBalancer.find('my-lb')
         self.assertIsNone(db_lb)
 
