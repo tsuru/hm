@@ -74,6 +74,7 @@ class Host(model.BaseModel):
             manager.restore_host(self.id)
         except Exception as e:
             log.error("Error trying to restore host '{}' in '{}': {}".format(self.id, self.manager, e))
+            raise e
 
     @classmethod
     def _current_group_alternate(cls, group, conf=None):

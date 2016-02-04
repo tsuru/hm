@@ -101,10 +101,10 @@ class HostTestCase(unittest.TestCase):
         host.restore()
 
     @patch("hm.log.error")
-    def test_restore_ignores_manager_error(self, log):
+    def test_restore_log_and_raises_exception_on_error(self, log):
         host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
         self.assertEqual(host.id, "explode")
-        host.restore()
+        self.assertRaises(Exception, host.restore)
         self.assertEqual(log.call_args, call("Error trying to restore host 'explode' "
                                              "in 'fake': failure to restore"))
         db_host = Host.find('explode')
