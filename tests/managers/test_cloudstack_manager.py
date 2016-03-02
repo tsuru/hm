@@ -397,14 +397,16 @@ class CloudStackManagerTestCase(unittest.TestCase):
         }
         client_mock.deployVirtualMachine.assert_called_with(create_data)
 
-    def destroy_host(self):
+    def test_destroy_host(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
         manager.destroy_host('host-id')
-        manager.client.destroyVirtualMachine.assert_called_with('host-id')
+        manager.client.destroyVirtualMachine.assert_called_with({'id': 'host-id'})
 
-    def restore_host(self):
+    def test_restore_host(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
         manager.restore_host('host-id')
-        manager.client.restoreVirtualMachine.assert_called_with('host-id')
+        manager.client.make_request.assert_called_with('restoreVirtualMachine',
+                                                       {'virtualmachineid': 'host-id'},
+                                                       response_key='restorevm')
