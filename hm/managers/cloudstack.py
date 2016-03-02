@@ -74,7 +74,7 @@ class CloudStackManager(managers.BaseManager):
 
     def restore_host(self, host_id):
         self.client.make_request('restoreVirtualMachine', {'virtualmachineid': host_id},
-                                 response_key='restorevm')
+                                 response_key='restorevmresponse')
 
     def _get_dns_name(self, vm):
         if not vm.get("nic"):

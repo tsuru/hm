@@ -409,4 +409,4 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.restore_host('host-id')
         manager.client.make_request.assert_called_with('restoreVirtualMachine',
                                                        {'virtualmachineid': 'host-id'},
-                                                       response_key='restorevm')
+                                                       response_key='restorevmresponse')
