@@ -38,6 +38,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
         ip_id = self._associate_ip()
         try:
             lb_id, address = self._create_lb_rule(ip_id, name)
+            self._assign_lb_additional_networks(lb_id)
             try:
                 self._create_lb_hc(lb_id)
             except:
@@ -139,6 +140,30 @@ class CloudstackLB(lb_managers.BaseLBManager):
         lb_rsp = self.cs_client.createLoadBalancerRule(lb_params)
         result = self._wait_if_jobid(lb_rsp)
         return lb_rsp['id'], result['loadbalancer']['publicip']
+
+    def _assign_lb_additional_networks(self, lb_id):
+        network_ids = []
+        i = 0
+        while True:
+            try:
+                id = self.get_conf("CLOUDSTACK_LB_NETWORK_ID_%s" % i)
+                i += 1
+                if not id:
+                    break
+                if id == self.lb_network_id:
+                    continue
+                network_ids.append(id)
+            except:
+                break
+        if not network_ids:
+            return
+        assign_networks_params = {
+            "projectid": self.project_id,
+            "id": lb_id,
+            "networkids": ",".join(network_ids),
+        }
+        lb_rsp = self.cs_client.assignNetworksToLoadBalancerRule(assign_networks_params)
+        self._wait_if_jobid(lb_rsp)
 
     def _create_lb_hc(self, lb_id):
         if not self.lb_healthcheck:

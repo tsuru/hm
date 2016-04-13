@@ -29,6 +29,9 @@ class CloudstackLBTestCase(unittest.TestCase):
             'CLOUDSTACK_LB_HEALTHCHECK': 'GET /',
             'CLOUDSTACK_LB_NETWORK_INDEX': '0',
             'CLOUDSTACK_LB_DOMAIN': 'abc.com',
+            'CLOUDSTACK_LB_NETWORK_ID_0': 'net-id',
+            'CLOUDSTACK_LB_NETWORK_ID_1': 'net-id2',
+            'CLOUDSTACK_LB_NETWORK_ID_2': 'net-id3',
         }
 
     def test_init(self):
@@ -87,6 +90,11 @@ class CloudstackLBTestCase(unittest.TestCase):
             'name': 'tsuru.abc.com',
             'additionalportmap': '81:8081,82:8082',
             'projectid': 'proj-123',
+        })
+        cs_instance.assignNetworksToLoadBalancerRule.assert_called_once_with({
+            'id': 'lb-id',
+            'projectid': 'proj-123',
+            'networkids': 'net-id2,net-id3',
         })
 
     @mock.patch("hm.lb_managers.cloudstack.CloudStack")
