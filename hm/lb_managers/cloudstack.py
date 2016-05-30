@@ -33,6 +33,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
         self.lb_healthcheck = self.get_conf("CLOUDSTACK_LB_HEALTHCHECK", None)
         self.lb_network_index = int(self.get_conf("CLOUDSTACK_LB_NETWORK_INDEX", 0))
         self.lb_domain = self.get_conf("CLOUDSTACK_LB_DOMAIN", None)
+        self.lb_cache_group = self.get_conf("CLOUDSTACK_LB_CACHE_GROUP", None)
 
     def create_load_balancer(self, name):
         ip_id = self._associate_ip()
@@ -137,6 +138,8 @@ class CloudstackLB(lb_managers.BaseLBManager):
             lb_params['additionalportmap'] = additional
         if self.project_id:
             lb_params['projectid'] = self.project_id
+        if self.lb_cache_group:
+            lb_params['cachegroup'] = self.lb_cache_group
         lb_rsp = self.cs_client.createLoadBalancerRule(lb_params)
         result = self._wait_if_jobid(lb_rsp)
         return lb_rsp['id'], result['loadbalancer']['publicip']
