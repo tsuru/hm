@@ -139,7 +139,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
         if self.project_id:
             lb_params['projectid'] = self.project_id
         if self.lb_cache_group:
-            lb_params['cachegroup'] = self.lb_cache_group
+            lb_params['cache'] = self.lb_cache_group
         lb_rsp = self.cs_client.createLoadBalancerRule(lb_params)
         result = self._wait_if_jobid(lb_rsp)
         return lb_rsp['id'], result['loadbalancer']['publicip']
