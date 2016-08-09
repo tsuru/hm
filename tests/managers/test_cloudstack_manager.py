@@ -410,3 +410,15 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client.make_request.assert_called_with('restoreVirtualMachine',
                                                        {'virtualmachineid': 'host-id'},
                                                        response_key='restorevmresponse')
+
+    def test_stop_host(self):
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.stop_host('host-id', True)
+        manager.client.stopVirtualMachine.assert_called_with({'id': 'host-id', 'forced': True})
+
+    def test_start_host(self):
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.start_host('host-id')
+        manager.client.startVirtualMachine.assert_called_with({'id': 'host-id'})

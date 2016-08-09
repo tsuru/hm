@@ -76,6 +76,22 @@ class Host(model.BaseModel):
             log.error("Error trying to restore host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e
 
+    def start(self):
+        manager = managers.by_name(self.manager, self.config)
+        try:
+            manager.start_host(self.id)
+        except Exception as e:
+            log.error("Error trying to start host '{}' in '{}': {}".format(self.id, self.manager, e))
+            raise e
+
+    def stop(self, forced=False):
+        manager = managers.by_name(self.manager, self.config)
+        try:
+            manager.stop_host(self.id, forced)
+        except Exception as e:
+            log.error("Error trying to stop host '{}' in '{}': {}".format(self.id, self.manager, e))
+            raise e
+
     @classmethod
     def _current_group_alternate(cls, group, conf=None):
         alternates_count = int(config.get_config("HM_ALTERNATIVE_CONFIG_COUNT", 1, conf))

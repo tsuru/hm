@@ -25,6 +25,14 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to restore")
 
+    def stop_host(self, id, forced=False):
+        if id == "explode":
+            raise Exception("failure to stop")
+
+    def start_host(self, id):
+        if id == "explode":
+            raise Exception("failure to start")
+
 
 managers.register('fake', FakeManager)
 
@@ -107,6 +115,36 @@ class HostTestCase(unittest.TestCase):
         self.assertRaises(Exception, host.restore)
         self.assertEqual(log.call_args, call("Error trying to restore host 'explode' "
                                              "in 'fake': failure to restore"))
+        db_host = Host.find('explode')
+        self.assertEqual(db_host.id, "explode")
+
+    def test_stop(self):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        self.assertEqual(host.id, "fake-id")
+        host.stop()
+
+    @patch("hm.log.error")
+    def test_stop_log_and_raises_exception_on_error(self, log):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
+        self.assertEqual(host.id, "explode")
+        self.assertRaises(Exception, host.stop)
+        self.assertEqual(log.call_args, call("Error trying to stop host 'explode' "
+                                             "in 'fake': failure to stop"))
+        db_host = Host.find('explode')
+        self.assertEqual(db_host.id, "explode")
+
+    def test_start(self):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        self.assertEqual(host.id, "fake-id")
+        host.start()
+
+    @patch("hm.log.error")
+    def test_start_log_and_raises_exception_on_error(self, log):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
+        self.assertEqual(host.id, "explode")
+        self.assertRaises(Exception, host.start)
+        self.assertEqual(log.call_args, call("Error trying to start host 'explode' "
+                                             "in 'fake': failure to start"))
         db_host = Host.find('explode')
         self.assertEqual(db_host.id, "explode")
 

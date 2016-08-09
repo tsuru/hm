@@ -72,6 +72,12 @@ class CloudStackManager(managers.BaseManager):
     def destroy_host(self, host_id):
         self.client.destroyVirtualMachine({"id": host_id})
 
+    def start_host(self, host_id):
+        self.client.startVirtualMachine({"id": host_id})
+
+    def stop_host(self, host_id, forced=False):
+        self.client.stopVirtualMachine({"id": host_id, "forced": forced})
+
     def restore_host(self, host_id):
         self.client.make_request('restoreVirtualMachine', {'virtualmachineid': host_id},
                                  response_key='restorevmresponse')
