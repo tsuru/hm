@@ -26,7 +26,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "boto==2.25.0",
-        "pymongo==2.6.3",
+        "pymongo==2.8",
         "requests==2.4.3",
         "GloboNetworkAPI==0.2.2",
     ],
