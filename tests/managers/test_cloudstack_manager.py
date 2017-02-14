@@ -410,6 +410,11 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client.make_request.assert_called_with('restoreVirtualMachine',
                                                        {'virtualmachineid': 'host-id'},
                                                        response_key='restorevmresponse')
+        manager.restore_host('host-id', 'template-id')
+        manager.client.make_request.assert_called_with('restoreVirtualMachine',
+                                                       {'virtualmachineid': 'host-id',
+                                                        'templateid': 'template-id'},
+                                                       response_key='restorevmresponse')
 
     def test_stop_host(self):
         manager = cloudstack.CloudStackManager(self.config)
