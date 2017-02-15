@@ -25,6 +25,10 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to restore")
 
+    def tag_vm(self, tags, id):
+        if id == "explode":
+            raise Exception("failure to add tag")
+
     def stop_host(self, id, forced=False):
         if id == "explode":
             raise Exception("failure to stop")
@@ -107,6 +111,12 @@ class HostTestCase(unittest.TestCase):
         host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
         self.assertEqual(host.id, "fake-id")
         host.restore()
+
+    def test_tag_vm(self):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        self.assertEqual(host.id, "fake-id")
+        tags = ['a:b', 'c:d']
+        host.tag_vm(tags)
 
     @patch("hm.log.error")
     def test_restore_log_and_raises_exception_on_error(self, log):
