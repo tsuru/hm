@@ -99,6 +99,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
                                                          "jobid": "qwe321"}
         vm = {"id": "abc123", "nic": [{"ipaddress": "10.0.0.1"}]}
         client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+        client_mock.listTags.return_value = {}
 
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
@@ -415,6 +416,21 @@ class CloudStackManagerTestCase(unittest.TestCase):
                                                        {'virtualmachineid': 'host-id',
                                                         'templateid': 'template-id'},
                                                        response_key='restorevmresponse')
+
+    def test_tag_vm_replacing_tags(self):
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.client.listTags.return_value = {"tag": [{"key": "foo"}, {"key": "bleh"}, {"key": "duh"}]}
+        manager.tag_vm(['bleh:xxx', 'test1:test', 'duh:aaaa'], 'host-id', 'project-id')
+        delete_calls = [mock.call({'resourcetype': 'UserMV', 'resourceids': 'host-id',
+                                   'tag[0].key': 'bleh', 'projectid': 'project-id'}),
+                        mock.call({'resourcetype': 'UserMV', 'resourceids': 'host-id',
+                                   'tag[0].key': 'duh', 'projectid': 'project-id'})]
+        manager.client.deleteTags.assert_has_calls(delete_calls)
+        create_tags = {'tags[1].key': 'bleh', 'tags[1].value': 'xxx', 'tags[2].key': 'test1',
+                       'tags[2].value': 'test', 'tags[3].key': 'duh', 'tags[3].value': 'aaaa',
+                       'resourceids': 'host-id', 'resourcetype': 'UserVm', 'projectid': 'project-id'}
+        manager.client.createTags.assert_called_with(create_tags)
 
     def test_stop_host(self):
         manager = cloudstack.CloudStackManager(self.config)

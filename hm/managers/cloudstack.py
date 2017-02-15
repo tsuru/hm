@@ -47,24 +47,36 @@ class CloudStackManager(managers.BaseManager):
         vm = self._wait_for_unit(vm_job, max_tries, project_id)
         tags = self.get_conf("HOST_TAGS", "")
         if tags:
-            self._tag_vm(tags.split(","), vm, project_id)
+            self.tag_vm(tags.split(","), vm["id"], project_id)
         return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm), alternative_id=alternative_id)
 
-    def _tag_vm(self, tag_list, vm, project_id=None):
+    def tag_vm(self, tag_list, vm_id, project_id=None):
         params = {}
 
+        list_tags_params = {"resourcetype": "UserVm", "resourceid": vm_id}
+        if project_id:
+            list_tags_params['projectid'] = project_id
+        machine_tags = self.client.listTags(list_tags_params)
         for i, tag in enumerate(tag_list, start=1):
             parts = tag.split(":", 2)
             if len(parts) < 2:
                 continue
             key, value = parts
+            if 'tag' in machine_tags:
+                for machine_tag in machine_tags['tag']:
+                    delete_tag_params = {"resourcetype": "UserMV", "resourceids": vm_id}
+                    if project_id:
+                        delete_tag_params['projectid'] = project_id
+                    if key == machine_tag['key']:
+                        delete_tag_params.update({"tag[0].key": key})
+                        self.client.deleteTags(delete_tag_params)
             params["tags[{}].key".format(i)] = key
             params["tags[{}].value".format(i)] = value
 
         if not params:
             return
 
-        params.update({"resourcetype": "UserVm", "resourceids": vm["id"]})
+        params.update({"resourcetype": "UserVm", "resourceids": vm_id})
         if project_id:
             params["projectid"] = project_id
         self.client.createTags(params)
