@@ -51,35 +51,39 @@ class CloudStackManager(managers.BaseManager):
         return host.Host(id=vm["id"], dns_name=self._get_dns_name(vm), alternative_id=alternative_id)
 
     def tag_vm(self, tag_list, vm_id, project_id=None):
-        params = {}
-
         list_tags_params = {"resourcetype": "UserVm", "resourceid": vm_id}
+        delete_tags_params = {"resourcetype": "UserVm", "resourceids": vm_id}
+        add_tags_params = {"resourcetype": "UserVm", "resourceids": vm_id}
         if project_id:
             list_tags_params['projectid'] = project_id
+            add_tags_params["projectid"] = project_id
+            delete_tags_params['projectid'] = project_id
         machine_tags = self.client.listTags(list_tags_params)
-        for i, tag in enumerate(tag_list, start=1):
+        tag_add_count = 1
+        tag_del_count = 0
+        for tag in tag_list:
+            ignore_tag_key = False
             parts = tag.split(":", 2)
             if len(parts) < 2:
                 continue
             key, value = parts
             if 'tag' in machine_tags:
-                for machine_tag in machine_tags['tag']:
-                    delete_tag_params = {"resourcetype": "UserMV", "resourceids": vm_id}
-                    if project_id:
-                        delete_tag_params['projectid'] = project_id
-                    if key == machine_tag['key']:
-                        delete_tag_params.update({"tag[0].key": key})
-                        self.client.deleteTags(delete_tag_params)
-            params["tags[{}].key".format(i)] = key
-            params["tags[{}].value".format(i)] = value
-
-        if not params:
+                for m_tag in machine_tags['tag']:
+                    if key == m_tag['key'] and value != m_tag['value']:
+                        delete_tags_params.update({"tags[{}].key".format(tag_del_count): m_tag['key'],
+                                                   "tags[{}].value".format(tag_del_count): m_tag['value']})
+                        tag_del_count += 1
+                    if key == m_tag['key'] and value == m_tag['value']:
+                        ignore_tag_key = True
+            if value is not '' and not ignore_tag_key:
+                add_tags_params["tags[{}].key".format(tag_add_count)] = key
+                add_tags_params["tags[{}].value".format(tag_add_count)] = value
+                tag_add_count += 1
+        if any(item.startswith('tags') for item in delete_tags_params.keys()):
+            self.client.deleteTags(delete_tags_params)
+        if not any(item.startswith('tags') for item in add_tags_params.keys()):
             return
-
-        params.update({"resourcetype": "UserVm", "resourceids": vm_id})
-        if project_id:
-            params["projectid"] = project_id
-        self.client.createTags(params)
+        self.client.createTags(add_tags_params)
 
     def destroy_host(self, host_id):
         self.client.destroyVirtualMachine({"id": host_id})

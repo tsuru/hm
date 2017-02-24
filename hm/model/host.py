@@ -76,10 +76,10 @@ class Host(model.BaseModel):
             log.error("Error trying to restore host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e
 
-    def tag_vm(self, tags):
+    def tag_vm(self, tags, project_id=None):
         manager = managers.by_name(self.manager, self.config)
         try:
-            manager.tag_vm(tags, self.id)
+            manager.tag_vm(tags, self.id, project_id)
         except Exception as e:
             log.error("Error trying to tag host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e

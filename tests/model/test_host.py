@@ -25,7 +25,7 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to restore")
 
-    def tag_vm(self, tags, id):
+    def tag_vm(self, tags, id, projectid=None):
         if id == "explode":
             raise Exception("failure to add tag")
 
