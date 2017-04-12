@@ -405,17 +405,39 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client.destroyVirtualMachine.assert_called_with({'id': 'host-id'})
 
     def test_restore_host(self):
+        client_mock = mock.Mock()
+        client_mock.restoreVirtualMachine.return_value = {"id": "abc123",
+                                                          "jobid": "qwe321"}
+        vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
         manager = cloudstack.CloudStackManager(self.config)
-        manager.client = mock.Mock()
+        manager.client = client_mock
+        manager.tag_vm = mock.Mock()
         manager.restore_host('host-id')
-        manager.client.make_request.assert_called_with('restoreVirtualMachine',
-                                                       {'virtualmachineid': 'host-id'},
-                                                       response_key='restorevmresponse')
-        manager.restore_host('host-id', 'template-id')
-        manager.client.make_request.assert_called_with('restoreVirtualMachine',
-                                                       {'virtualmachineid': 'host-id',
-                                                        'templateid': 'template-id'},
-                                                       response_key='restorevmresponse')
+        manager.client.restoreVirtualMachine.assert_called_with({'virtualmachineid': 'host-id'},
+                                                                response_key='restorevmresponse')
+        manager.client.wait_for_job.assert_called_with('qwe321', 100)
+        manager.tag_vm.assert_not_called()
+
+    def test_restore_host_with_tags(self):
+        client_mock = mock.Mock()
+        client_mock.restoreVirtualMachine.return_value = {"id": "abc123",
+                                                          "jobid": "qwe321"}
+        vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
+        self.config.update({
+            "HOST_TAGS": "blah:bleh,monitor:1,wait:wat",
+            "CLOUDSTACK_PROJECT_ID": "project-base"
+        })
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = client_mock
+        manager.tag_vm = mock.Mock()
+        manager.restore_host('host-id', '1234')
+        manager.client.restoreVirtualMachine.assert_called_with({'virtualmachineid': 'host-id',
+                                                                 'templateid': '1234'},
+                                                                response_key='restorevmresponse')
+        manager.client.wait_for_job.assert_called_with('qwe321', 100)
+        manager.tag_vm.assert_called_with(['blah:bleh', 'monitor:1', 'wait:wat'], 'host-id', 'project-base')
 
     def test_tag_vm_replacing_tags(self):
         manager = cloudstack.CloudStackManager(self.config)

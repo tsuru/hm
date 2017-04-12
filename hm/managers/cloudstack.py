@@ -98,8 +98,17 @@ class CloudStackManager(managers.BaseManager):
         restore_args = {'virtualmachineid': host_id}
         if template_id is not None:
             restore_args['templateid'] = template_id
-        self.client.make_request('restoreVirtualMachine', restore_args,
-                                 response_key='restorevmresponse')
+        vm_job = self.client.restoreVirtualMachine(restore_args, response_key='restorevmresponse')
+        max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
+        if not vm_job.get("jobid"):
+            raise CloudStackException(
+                "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {}".format(
+                    repr(restore_args), repr(vm_job)))
+        project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
+        vm = self._wait_for_unit(vm_job, max_tries, project_id)
+        tags = self.get_conf("HOST_TAGS", "")
+        if tags:
+            self.tag_vm(tags.split(","), vm["id"], project_id)
 
     def _get_dns_name(self, vm):
         if not vm.get("nic"):
