@@ -68,10 +68,10 @@ class Host(model.BaseModel):
             log.error("Error trying to destroy host '{}' in '{}': {}".format(self.id, self.manager, e))
         self.storage().remove_host(self.id)
 
-    def restore(self, template_id=None):
+    def restore(self, reset_template=False):
         manager = managers.by_name(self.manager, self.config)
         try:
-            manager.restore_host(self.id, template_id)
+            manager.restore_host(self.id, reset_template)
         except Exception as e:
             log.error("Error trying to restore host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e
