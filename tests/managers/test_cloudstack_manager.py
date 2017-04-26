@@ -406,22 +406,23 @@ class CloudStackManagerTestCase(unittest.TestCase):
 
     def test_restore_host(self):
         client_mock = mock.Mock()
-        client_mock.restoreVirtualMachine.return_value = {"id": "abc123",
-                                                          "jobid": "qwe321"}
+        client_mock.make_request.return_value = {"id": "abc123",
+                                                 "jobid": "qwe321"}
         vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
         client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
         manager.tag_vm = mock.Mock()
         manager.restore_host('host-id')
-        manager.client.restoreVirtualMachine.assert_called_with({'virtualmachineid': 'host-id'},
-                                                                response_key='restorevmresponse')
+        manager.client.make_request.assert_called_with('restoreVirtualMachine',
+                                                       {'virtualmachineid': 'host-id'},
+                                                       response_key='restorevmresponse')
         manager.client.wait_for_job.assert_called_with('qwe321', 100)
         manager.tag_vm.assert_not_called()
 
     def test_restore_host_with_tags_and_reset_template(self):
         client_mock = mock.Mock()
-        client_mock.restoreVirtualMachine.return_value = {"id": "abc123",
+        client_mock.make_request.return_value = {"id": "abc123",
                                                           "jobid": "qwe321"}
         vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
         self.config.update({
@@ -434,9 +435,9 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client = client_mock
         manager.tag_vm = mock.Mock()
         manager.restore_host('host-id', True)
-        manager.client.restoreVirtualMachine.assert_called_with({'virtualmachineid': 'host-id',
-                                                                 'templateid': '1234'},
-                                                                response_key='restorevmresponse')
+        manager.client.make_request.assert_called_with('restoreVirtualMachine',
+                                                       {'virtualmachineid': 'host-id', 'templateid': '1234'},
+                                                       response_key='restorevmresponse')
         manager.client.wait_for_job.assert_called_with('qwe321', 100)
         manager.tag_vm.assert_called_with(['blah:bleh', 'monitor:1', 'wait:wat'], 'host-id', 'project-base')
 

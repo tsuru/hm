@@ -99,7 +99,7 @@ class CloudStackManager(managers.BaseManager):
         if reset_template:
             template_id = self._get_alternate_conf("CLOUDSTACK_TEMPLATE_ID", alternative_id)
             restore_args['templateid'] = template_id
-        vm_job = self.client.restoreVirtualMachine(restore_args, response_key='restorevmresponse')
+        vm_job = self.client.make_request('restoreVirtualMachine', restore_args, response_key='restorevmresponse')
         max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
         if not vm_job.get("jobid"):
             raise CloudStackException(
@@ -119,8 +119,11 @@ class CloudStackManager(managers.BaseManager):
         return dns_name
 
     def _wait_for_unit(self, vm_job, max_tries, project_id):
-        self.client.wait_for_job(vm_job["jobid"], max_tries)
-        data = {"id": vm_job["id"]}
+        result = self.client.wait_for_job(vm_job["jobid"], max_tries)
+        if vm_job.get("id"):
+            data = {"id": vm_job["id"]}
+        else:
+            data = {"id": result['jobresult']['virtualmachine']['id']}
         if project_id:
             data["projectid"] = project_id
         vms = self.client.listVirtualMachines(data)
