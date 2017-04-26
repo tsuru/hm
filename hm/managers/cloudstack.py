@@ -99,7 +99,8 @@ class CloudStackManager(managers.BaseManager):
         if reset_template:
             template_id = self._get_alternate_conf("CLOUDSTACK_TEMPLATE_ID", alternative_id)
             restore_args['templateid'] = template_id
-        vm_job = self.client.make_request('restoreVirtualMachine', restore_args, response_key='restorevmresponse')
+        vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
+                                          response_key='restorevmresponse')
         max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
         if not vm_job.get("jobid"):
             raise CloudStackException(

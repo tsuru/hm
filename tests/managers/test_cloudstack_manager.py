@@ -423,7 +423,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
     def test_restore_host_with_tags_and_reset_template(self):
         client_mock = mock.Mock()
         client_mock.make_request.return_value = {"id": "abc123",
-                                                          "jobid": "qwe321"}
+                                                 "jobid": "qwe321"}
         vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
         self.config.update({
             "HOST_TAGS": "blah:bleh,monitor:1,wait:wat",
