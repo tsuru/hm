@@ -94,7 +94,7 @@ class CloudStackManager(managers.BaseManager):
     def stop_host(self, host_id, forced=False):
         self.client.stopVirtualMachine({"id": host_id, "forced": forced})
 
-    def restore_host(self, host_id, reset_template=False, alternative_id=0):
+    def restore_host(self, host_id, reset_template=False, reset_tags=False, alternative_id=0):
         restore_args = {'virtualmachineid': host_id}
         if reset_template:
             template_id = self._get_alternate_conf("CLOUDSTACK_TEMPLATE_ID", alternative_id)
@@ -106,11 +106,12 @@ class CloudStackManager(managers.BaseManager):
             raise CloudStackException(
                 "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {}".format(
                     repr(restore_args), repr(vm_job)))
-        project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
-        vm = self._wait_for_unit(vm_job, max_tries, project_id)
-        tags = self.get_conf("HOST_TAGS", "")
-        if tags:
-            self.tag_vm(tags.split(","), vm["id"], project_id)
+        if reset_tags:
+            project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
+            vm = self._wait_for_unit(vm_job, max_tries, project_id)
+            tags = self.get_conf("HOST_TAGS", "")
+            if tags:
+                self.tag_vm(tags.split(","), vm["id"], project_id)
 
     def _get_dns_name(self, vm):
         if not vm.get("nic"):

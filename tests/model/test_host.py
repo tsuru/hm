@@ -21,7 +21,7 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to destroy")
 
-    def restore_host(self, id, reset_template=False):
+    def restore_host(self, id, reset_template=False, reset_tags=False):
         if id == "explode":
             raise Exception("failure to restore")
 
