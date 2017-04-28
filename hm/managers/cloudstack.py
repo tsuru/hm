@@ -59,7 +59,7 @@ class CloudStackManager(managers.BaseManager):
             add_tags_params["projectid"] = project_id
             delete_tags_params['projectid'] = project_id
         machine_tags = self.client.listTags(list_tags_params)
-        tag_add_count = 1
+        tag_add_count = 0
         tag_del_count = 0
         for tag in tag_list:
             ignore_tag_key = False
