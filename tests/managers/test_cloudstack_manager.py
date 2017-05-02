@@ -444,6 +444,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
     def test_tag_vm_replacing_tags(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
+        manager.client.deleteTags.return_value = {"jobid": "1"}
         manager.client.listTags.return_value = {"tag": [{"key": "foo", "value": "bar"},
                                                         {"key": "bleh", "value": "blah"},
                                                         {"key": "duh", "value": "dah"}]}
@@ -461,6 +462,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
     def test_tag_vm_remove_empty_tags(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
+        manager.client.deleteTags.return_value = {"jobid": "1"}
         manager.client.listTags.return_value = {"tag": [{"key": "foo", "value": "bar"},
                                                         {"key": "bleh", "value": "blah"},
                                                         {"key": "duh", "value": "dah"}]}
@@ -469,6 +471,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
                                    'tags[0].key': 'bleh', 'tags[0].value': 'blah',
                                    'tags[1].key': 'duh', 'tags[1].value': 'dah',
                                    'projectid': 'project-id'})]
+
         manager.client.deleteTags.assert_has_calls(delete_calls)
         create_tags = {'tags[0].key': 'test1', 'tags[0].value': 'test',
                        'tags[1].key': 'duh', 'tags[1].value': 'aaaa',

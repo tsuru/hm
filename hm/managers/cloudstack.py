@@ -15,6 +15,7 @@ class CloudStackManager(managers.BaseManager):
         key = self.get_conf("CLOUDSTACK_API_KEY")
         secret_key = self.get_conf("CLOUDSTACK_SECRET_KEY")
         self.client = CloudStack(url, key, secret_key)
+        self.max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
 
     def create_host(self, name=None, alternative_id=0):
         group = self.get_conf("CLOUDSTACK_GROUP", "")
@@ -39,12 +40,11 @@ class CloudStackManager(managers.BaseManager):
         if network_ids:
             data["networkids"] = network_ids
         vm_job = self.client.deployVirtualMachine(data)
-        max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
         if not vm_job.get("jobid"):
             raise CloudStackException(
                 "unexpected response from deployVirtualMachine({}), expected jobid key, got: {}".format(
                     repr(data), repr(vm_job)))
-        vm = self._wait_for_unit(vm_job, max_tries, project_id)
+        vm = self._wait_for_unit(vm_job, project_id)
         tags = self.get_conf("HOST_TAGS", "")
         if tags:
             self.tag_vm(tags.split(","), vm["id"], project_id)
@@ -80,7 +80,8 @@ class CloudStackManager(managers.BaseManager):
                 add_tags_params["tags[{}].value".format(tag_add_count)] = value
                 tag_add_count += 1
         if any(item.startswith('tags') for item in delete_tags_params.keys()):
-            self.client.deleteTags(delete_tags_params)
+            job = self.client.deleteTags(delete_tags_params)
+            self.client.wait_for_job(job["jobid"], self.max_tries)
         if not any(item.startswith('tags') for item in add_tags_params.keys()):
             return
         self.client.createTags(add_tags_params)
@@ -101,14 +102,13 @@ class CloudStackManager(managers.BaseManager):
             restore_args['templateid'] = template_id
         vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
                                           response_key='restorevmresponse')
-        max_tries = int(self.get_conf("CLOUDSTACK_MAX_TRIES", 100))
         if not vm_job.get("jobid"):
             raise CloudStackException(
                 "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {}".format(
                     repr(restore_args), repr(vm_job)))
         if reset_tags:
             project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
-            vm = self._wait_for_unit(vm_job, max_tries, project_id)
+            vm = self._wait_for_unit(vm_job, project_id)
             tags = self.get_conf("HOST_TAGS", "")
             if tags:
                 self.tag_vm(tags.split(","), vm["id"], project_id)
@@ -120,8 +120,8 @@ class CloudStackManager(managers.BaseManager):
         dns_name = vm["nic"][network_index]["ipaddress"]
         return dns_name
 
-    def _wait_for_unit(self, vm_job, max_tries, project_id):
-        result = self.client.wait_for_job(vm_job["jobid"], max_tries)
+    def _wait_for_unit(self, vm_job, project_id):
+        result = self.client.wait_for_job(vm_job["jobid"], self.max_tries)
         if vm_job.get("id"):
             data = {"id": vm_job["id"]}
         else:
