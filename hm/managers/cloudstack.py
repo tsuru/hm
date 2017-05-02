@@ -97,21 +97,32 @@ class CloudStackManager(managers.BaseManager):
 
     def restore_host(self, host_id, reset_template=False, reset_tags=False, alternative_id=0):
         restore_args = {'virtualmachineid': host_id}
+        list_tags_params = {"resourcetype": "UserVm", "resourceid": host_id}
+        project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
+        if project_id:
+            list_tags_params['projectid'] = project_id
+        tags = None
         if reset_template:
             template_id = self._get_alternate_conf("CLOUDSTACK_TEMPLATE_ID", alternative_id)
             restore_args['templateid'] = template_id
+        if reset_tags:
+            tags = self.get_conf("HOST_TAGS", "")
+            if tags:
+                current_tags = self.client.listTags(list_tags_params)
+                if 'tag' in current_tags:
+                    self.tag_vm(tags.split(","), host_id, project_id)
+                else:
+                    raise CloudStackException('''unexpected response from listTags on restore_host: {}
+                                              '''.format(current_tags))
         vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
                                           response_key='restorevmresponse')
         if not vm_job.get("jobid"):
+            if reset_tags and tags:
+                current_tags = ["{}:{}".format(tag['key'], tag['value']) for tag in current_tags['tag']]
+                self.tag_vm(current_tags, host_id, project_id)
             raise CloudStackException(
                 "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {}".format(
                     repr(restore_args), repr(vm_job)))
-        if reset_tags:
-            project_id = self._get_alternate_conf("CLOUDSTACK_PROJECT_ID", 0, None)
-            vm = self._wait_for_unit(vm_job, project_id)
-            tags = self.get_conf("HOST_TAGS", "")
-            if tags:
-                self.tag_vm(tags.split(","), vm["id"], project_id)
 
     def _get_dns_name(self, vm):
         if not vm.get("nic"):
