@@ -417,18 +417,21 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client.make_request.assert_called_with('restoreVirtualMachine',
                                                        {'virtualmachineid': 'host-id'},
                                                        response_key='restorevmresponse')
-        manager.client.wait_for_job.assert_not_called()
+        manager.client.wait_for_job.assert_called_with('qwe321', 100)
         manager.tag_vm.assert_not_called()
 
     def test_restore_host_with_tags_and_reset_template(self):
         client_mock = mock.Mock()
         client_mock.make_request.return_value = {"id": "abc123",
                                                  "jobid": "qwe321"}
+        vm = {"id": "host-id", "nic": [{"ipaddress": "10.0.0.1"}]}
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
         self.config.update({
             "HOST_TAGS": "blah:bleh,monitor:1,wait:wat",
             "CLOUDSTACK_PROJECT_ID": "project-base",
             "CLOUDSTACK_TEMPLATE_ID": "1234"
         })
+        client_mock.listVirtualMachines.return_value = {"virtualmachine": [vm]}
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
         manager.client.listTags.return_value = {"tag": [{"key": "foo", "value": "bar"},
@@ -443,12 +446,14 @@ class CloudStackManagerTestCase(unittest.TestCase):
 
     def test_restore_host_fail_and_rollback_tags(self):
         client_mock = mock.Mock()
-        client_mock.make_request.return_value = {"status": "fail"}
+        client_mock.make_request.return_value = {"id": "abc123",
+                                                 "jobid": "qwe321"}
         self.config.update({
             "HOST_TAGS": "blah:bleh,monitor:1,wait:wat",
             "CLOUDSTACK_PROJECT_ID": "project-base",
             "CLOUDSTACK_TEMPLATE_ID": "1234"
         })
+        client_mock.listVirtualMachines.return_value = Exception("fail")
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = client_mock
         manager.client.listTags.return_value = {"tag": [{"key": "foo", "value": "bar"},

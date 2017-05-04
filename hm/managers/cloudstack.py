@@ -114,9 +114,11 @@ class CloudStackManager(managers.BaseManager):
                 else:
                     raise CloudStackException('''unexpected response from listTags on restore_host: {}
                                               '''.format(current_tags))
-        vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
-                                          response_key='restorevmresponse')
-        if not vm_job.get("jobid"):
+        try:
+            vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
+                                              response_key='restorevmresponse')
+            self._wait_for_unit(vm_job, project_id)
+        except Exception:
             if reset_tags and tags:
                 current_tags = ["{}:{}".format(tag['key'], tag['value']) for tag in current_tags['tag']]
                 self.tag_vm(current_tags, host_id, project_id)
