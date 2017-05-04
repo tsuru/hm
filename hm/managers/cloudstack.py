@@ -118,13 +118,13 @@ class CloudStackManager(managers.BaseManager):
             vm_job = self.client.make_request('restoreVirtualMachine', restore_args,
                                               response_key='restorevmresponse')
             self._wait_for_unit(vm_job, project_id)
-        except Exception:
+        except Exception as e:
             if reset_tags and tags:
                 current_tags = ["{}:{}".format(tag['key'], tag['value']) for tag in current_tags['tag']]
                 self.tag_vm(current_tags, host_id, project_id)
             raise CloudStackException(
-                "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {}".format(
-                    repr(restore_args), repr(vm_job)))
+                "unexpected response from restoreVirtualMachine({}), expected jobid key, got: {} ({})".format(
+                    repr(restore_args), repr(vm_job), repr(e)))
 
     def _get_dns_name(self, vm):
         if not vm.get("nic"):
