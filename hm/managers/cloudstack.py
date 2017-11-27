@@ -63,7 +63,7 @@ class CloudStackManager(managers.BaseManager):
         tag_del_count = 0
         for tag in tag_list:
             ignore_tag_key = False
-            parts = tag.split(":", 2)
+            parts = tag.split(":", 1)
             if len(parts) < 2:
                 continue
             key, value = parts
