@@ -91,7 +91,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
             "CLOUDSTACK_PROJECT_ID": "project-123",
             "CLOUDSTACK_NETWORK_IDS": "net-123",
             "CLOUDSTACK_GROUP": "feaas",
-            "HOST_TAGS": "Name:something,monitor:1,wait=wat",
+            "HOST_TAGS": "Name:something,monitor:1,wait=wat,syslog:logging:5140",
         })
 
         client_mock = mock.Mock()
@@ -125,6 +125,8 @@ class CloudStackManagerTestCase(unittest.TestCase):
             "tags[0].value": "something",
             "tags[1].key": "monitor",
             "tags[1].value": "1",
+            "tags[2].key": "syslog",
+            "tags[2].value": "logging:5140",
         }
         client_mock.createTags.assert_called_with(tag_data)
 
