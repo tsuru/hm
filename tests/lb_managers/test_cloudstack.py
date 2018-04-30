@@ -26,7 +26,7 @@ class CloudstackLBTestCase(unittest.TestCase):
             'CLOUDSTACK_LB_ALGORITHM': 'leastconn',
             'CLOUDSTACK_LB_PORT_MAPPING': '80:8080,81:8081,82:8082',
             'CLOUDSTACK_LB_OPEN_FIREWALL': 'false',
-            'CLOUDSTACK_LB_DSR': 'false',
+            'CLOUDSTACK_LB_DSR': 'true',
             'CLOUDSTACK_LB_HEALTHCHECK': 'GET /',
             'CLOUDSTACK_LB_NETWORK_INDEX': '0',
             'CLOUDSTACK_LB_DOMAIN': 'abc.com',
@@ -74,6 +74,7 @@ class CloudstackLBTestCase(unittest.TestCase):
         self.assertEqual("192.168.1.5", lb.address)
         self.assertEqual("tsuru", lb.name)
         self.assertEqual("proj-123", lb.project_id)
+        self.assertEqual(True, lb.dsr)
         cs_instance.make_request.assert_called_once_with('associateIpAddress', {
             'networkid': 'net-id',
             'projectid': 'proj-123',
@@ -87,7 +88,7 @@ class CloudstackLBTestCase(unittest.TestCase):
             'publicport': '80',
             'privateport': '8080',
             'openfirewall': 'false',
-            'dsr': 'false',
+            'dsr': 'true',
             'publicipid': 'lb-ip-id',
             'name': 'tsuru.abc.com',
             'additionalportmap': '81:8081,82:8082',
@@ -129,7 +130,7 @@ class CloudstackLBTestCase(unittest.TestCase):
             'publicport': '80',
             'privateport': '8080',
             'openfirewall': 'false',
-            'dsr': 'false',
+            'dsr': 'true',
             'publicipid': 'lb-ip-id',
             'name': 'tsuru.abc.com',
             'additionalportmap': '81:8081,82:8082',

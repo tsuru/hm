@@ -54,7 +54,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
             return load_balancer.LoadBalancer(
                 lb_id, name, address,
                 project_id=self.project_id,
-                ip_id=ip_id)
+                ip_id=ip_id, dsr=self.lb_dsr in ["true", "True", "1"])
         except:
             exc_info = sys.exc_info()
             try:
