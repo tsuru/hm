@@ -34,6 +34,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
         self.lb_network_index = int(self.get_conf("CLOUDSTACK_LB_NETWORK_INDEX", 0))
         self.lb_domain = self.get_conf("CLOUDSTACK_LB_DOMAIN", None)
         self.lb_cache_group = self.get_conf("CLOUDSTACK_LB_CACHE_GROUP", None)
+        self.lb_dsr = self.get_conf("CLOUDSTACK_LB_DSR", "false")
 
     def create_load_balancer(self, name):
         ip_id = self._associate_ip()
@@ -131,6 +132,7 @@ class CloudstackLB(lb_managers.BaseLBManager):
             'publicport': public,
             'privateport': private,
             'openfirewall': self.lb_open_firewall,
+            'dsr': self.lb_dsr,
             'publicipid': ip_id,
             'name': name,
         }
