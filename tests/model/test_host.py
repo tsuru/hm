@@ -37,6 +37,9 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to start")
 
+    def scale_host(self, id):
+        if id == "explode":
+            raise Exception("failure to scale")
 
 managers.register('fake', FakeManager)
 
@@ -140,6 +143,21 @@ class HostTestCase(unittest.TestCase):
         self.assertRaises(Exception, host.stop)
         self.assertEqual(log.call_args, call("Error trying to stop host 'explode' "
                                              "in 'fake': failure to stop"))
+        db_host = Host.find('explode')
+        self.assertEqual(db_host.id, "explode")
+
+    def test_scale(self):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
+        self.assertEqual(host.id, "fake-id")
+        host.scale()
+
+    @patch("hm.log.error")
+    def test_scale_log_and_raises_exception_on_error(self, log):
+        host = Host.create('fake', 'my-group', {"HOST_ID": "explode"})
+        self.assertEqual(host.id, "explode")
+        self.assertRaises(Exception, host.scale)
+        self.assertEqual(log.call_args, call("Error trying to scale host 'explode' "
+                                             "in 'fake': failure to scale"))
         db_host = Host.find('explode')
         self.assertEqual(db_host.id, "explode")
 
