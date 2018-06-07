@@ -529,3 +529,21 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client = mock.Mock()
         manager.start_host('host-id')
         manager.client.startVirtualMachine.assert_called_with({'id': 'host-id'})
+
+    def test_scale_host(self):
+        self.config.update({
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "large"
+        })
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.client.scaleVirtualMachine.return_value = {"jobid": "qwe321"}
+        manager.scale_host('host-id')
+        manager.client.scaleVirtualMachine.assert_called_with({'id': 'host-id', 'serviceofferingid': 'large'})
+        manager.client.wait_for_job.assert_called_with('qwe321', 100)
+
+    def test_scale_host_offering_not_defined_error(self):
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        with self.assertRaises(Exception):
+            manager.scale_host('host-id')
+        manager.client.scaleVirtualMachine.assert_not_called()
