@@ -100,10 +100,10 @@ class Host(model.BaseModel):
             log.error("Error trying to stop host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e
 
-    def scale(self):
+    def scale(self, project_id=None):
         manager = managers.by_name(self.manager, self.config)
         try:
-            manager.scale_host(self.id)
+            manager.scale_host(self.id, project_id)
         except Exception as e:
             log.error("Error trying to scale host '{}' in '{}': {}".format(self.id, self.manager, e))
             raise e

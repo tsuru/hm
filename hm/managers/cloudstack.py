@@ -99,12 +99,21 @@ class CloudStackManager(managers.BaseManager):
         job = self.client.stopVirtualMachine({"id": host_id, "forced": forced_stop})
         self.client.wait_for_job(job["jobid"], self.max_tries)
 
-    def scale_host(self, host_id):
+    def scale_host(self, host_id, project_id=None):
         service_offering_id = self._get_alternate_conf("CLOUDSTACK_SERVICE_OFFERING_ID", 0)
         if not service_offering_id:
             raise Exception("scale_host: no CLOUDSTACK_SERVICE_OFFERING_ID defined to scale up instance")
-        job = self.client.scaleVirtualMachine({"id": host_id, "serviceofferingid": service_offering_id})
-        self.client.wait_for_job(job["jobid"], self.max_tries)
+        data = {"id": host_id}
+        if project_id:
+            data["projectid"] = project_id
+        try:
+            vm = self.client.listVirtualMachines(data)
+            current_offering = vm["virtualmachine"][0]['serviceofferingid']
+        except:
+            raise Exception("scale_host: machine {} not found".format(host_id))
+        if current_offering != service_offering_id:
+            job = self.client.scaleVirtualMachine({"id": host_id, "serviceofferingid": service_offering_id})
+            self.client.wait_for_job(job["jobid"], self.max_tries)
 
     def restore_host(self, host_id, reset_template=False, reset_tags=False, alternative_id=0):
         restore_args = {'virtualmachineid': host_id}

@@ -539,9 +539,35 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
         manager.client.scaleVirtualMachine.return_value = {"jobid": "qwe321"}
-        manager.scale_host('host-id')
-        manager.client.scaleVirtualMachine.assert_called_with({'id': 'host-id', 'serviceofferingid': 'large'})
+        manager.client.listVirtualMachines.return_value = {"virtualmachine": [{"serviceofferingid": "small"}]}
+        manager.scale_host('host-id', 'project-id')
+        manager.client.listVirtualMachines.assert_called_with({"id": "host-id", "projectid": "project-id"})
+        manager.client.scaleVirtualMachine.assert_called_with({"id": "host-id", "serviceofferingid": "large"})
         manager.client.wait_for_job.assert_called_with('qwe321', 100)
+
+    def test_scale_host_ignore_same_offering(self):
+        self.config.update({
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "large"
+        })
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.client.scaleVirtualMachine.return_value = {"jobid": "qwe321"}
+        manager.client.listVirtualMachines.return_value = {"virtualmachine": [{"serviceofferingid": "large"}]}
+        manager.scale_host('host-id', 'project-id')
+        manager.client.scaleVirtualMachine.assert_not_called()
+        manager.client.wait_for_job.assert_not_called()
+
+    def test_scale_host_not_found(self):
+        self.config.update({
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "large"
+        })
+        manager = cloudstack.CloudStackManager(self.config)
+        manager.client = mock.Mock()
+        manager.client.listVirtualMachines.side_effect = Exception("Host not found")
+        with self.assertRaises(Exception):
+            manager.scale_host('host-id', 'project-id')
+        manager.client.scaleVirtualMachine.assert_not_called()
+        manager.client.wait_for_job.assert_not_called()
 
     def test_scale_host_offering_not_defined_error(self):
         manager = cloudstack.CloudStackManager(self.config)
