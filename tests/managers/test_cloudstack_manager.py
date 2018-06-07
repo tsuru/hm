@@ -521,8 +521,10 @@ class CloudStackManagerTestCase(unittest.TestCase):
     def test_stop_host(self):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
+        manager.client.stopVirtualMachine.return_value = {"jobid": "qwe321"}
         manager.stop_host('host-id', True)
         manager.client.stopVirtualMachine.assert_called_with({'id': 'host-id', 'forced': 'true'})
+        manager.client.wait_for_job.assert_called_with('qwe321', 100)
 
     def test_start_host(self):
         manager = cloudstack.CloudStackManager(self.config)
