@@ -93,7 +93,10 @@ class CloudStackManager(managers.BaseManager):
         self.client.startVirtualMachine({"id": host_id})
 
     def stop_host(self, host_id, forced=False):
-        self.client.stopVirtualMachine({"id": host_id, "forced": forced})
+        forced_stop = "false"
+        if forced:
+            forced_stop = "true"
+        self.client.stopVirtualMachine({"id": host_id, "forced": forced_stop})
 
     def scale_host(self, host_id):
         service_offering_id = self._get_alternate_conf("CLOUDSTACK_SERVICE_OFFERING_ID", 0)

@@ -522,7 +522,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
         manager.stop_host('host-id', True)
-        manager.client.stopVirtualMachine.assert_called_with({'id': 'host-id', 'forced': True})
+        manager.client.stopVirtualMachine.assert_called_with({'id': 'host-id', 'forced': 'true'})
 
     def test_start_host(self):
         manager = cloudstack.CloudStackManager(self.config)
