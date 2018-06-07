@@ -534,13 +534,14 @@ class CloudStackManagerTestCase(unittest.TestCase):
 
     def test_scale_host(self):
         self.config.update({
-            "CLOUDSTACK_SERVICE_OFFERING_ID": "large"
+            "CLOUDSTACK_SERVICE_OFFERING_ID": "large",
+            "CLOUDSTACK_PROJECT_ID": "project-id"
         })
         manager = cloudstack.CloudStackManager(self.config)
         manager.client = mock.Mock()
         manager.client.scaleVirtualMachine.return_value = {"jobid": "qwe321"}
         manager.client.listVirtualMachines.return_value = {"virtualmachine": [{"serviceofferingid": "small"}]}
-        manager.scale_host('host-id', 'project-id')
+        manager.scale_host('host-id')
         manager.client.listVirtualMachines.assert_called_with({"id": "host-id", "projectid": "project-id"})
         manager.client.scaleVirtualMachine.assert_called_with({"id": "host-id", "serviceofferingid": "large"})
         manager.client.wait_for_job.assert_called_with('qwe321', 100)
@@ -553,7 +554,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client = mock.Mock()
         manager.client.scaleVirtualMachine.return_value = {"jobid": "qwe321"}
         manager.client.listVirtualMachines.return_value = {"virtualmachine": [{"serviceofferingid": "large"}]}
-        manager.scale_host('host-id', 'project-id')
+        manager.scale_host('host-id')
         manager.client.scaleVirtualMachine.assert_not_called()
         manager.client.wait_for_job.assert_not_called()
 
@@ -565,7 +566,7 @@ class CloudStackManagerTestCase(unittest.TestCase):
         manager.client = mock.Mock()
         manager.client.listVirtualMachines.side_effect = Exception("Host not found")
         with self.assertRaises(Exception):
-            manager.scale_host('host-id', 'project-id')
+            manager.scale_host('host-id')
         manager.client.scaleVirtualMachine.assert_not_called()
         manager.client.wait_for_job.assert_not_called()
 
