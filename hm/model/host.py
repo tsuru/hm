@@ -101,7 +101,7 @@ class Host(model.BaseModel):
             raise e
 
     def scale(self):
-        manager = managers.by_name(self.manager)
+        manager = managers.by_name(self.manager, self.config)
         try:
             manager.scale_host(self.id)
         except Exception as e:
