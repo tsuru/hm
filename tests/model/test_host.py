@@ -37,7 +37,7 @@ class FakeManager(managers.BaseManager):
         if id == "explode":
             raise Exception("failure to start")
 
-    def scale_host(self, id, projectid=None):
+    def scale_host(self, id):
         if id == "explode":
             raise Exception("failure to scale")
 
