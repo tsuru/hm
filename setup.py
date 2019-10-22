@@ -27,7 +27,7 @@ setup(
     install_requires=[
         "boto==2.25.0",
         "pymongo==3.3.0",
-        "requests==2.4.3",
+        "requests==2.20.0",
         "GloboNetworkAPI==0.2.2",
     ],
     extras_require={
