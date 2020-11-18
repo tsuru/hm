@@ -44,11 +44,11 @@ class Host(model.BaseModel):
     @classmethod
     def create(cls, manager_name, group, conf=None):
         manager = managers.by_name(manager_name, conf)
-        alternatative_id_error = []
+        alternative_id_error = []
         last_host_create_exception = None
         while True:
             try:
-                alternative_id = cls._current_group_alternate(group, conf, alternatative_id_error)
+                alternative_id = cls._current_group_alternate(group, conf, alternative_id_error)
             except Exception as e:
                 if last_host_create_exception:
                     raise last_host_create_exception
@@ -57,7 +57,7 @@ class Host(model.BaseModel):
                 host = manager.create_host(name=group, alternative_id=alternative_id)
                 break
             except Exception as e:
-                alternatative_id_error.append(alternative_id)
+                alternative_id_error.append(alternative_id)
                 last_host_create_exception = e
         host.manager = manager_name
         host.group = group
@@ -133,8 +133,6 @@ class Host(model.BaseModel):
             alterantives_map[host.alternative_id] += 1
         min_alt_count = None
         for i in alternates_valid:
-            if i in alternative_id_error:
-                next
             if min_alt_count is None or alterantives_map[i] < min_alt_count:
                 min_alt_id = i
                 min_alt_count = alterantives_map[i]
