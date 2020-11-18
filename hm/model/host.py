@@ -124,9 +124,9 @@ class Host(model.BaseModel):
     @classmethod
     def _current_group_alternate(cls, group, conf, alternative_id_error):
         alternates_count = range(int(config.get_config("HM_ALTERNATIVE_CONFIG_COUNT", 1, conf)))
-        if len(alternative_id_error) == len(alternates_count):
-            raise NoMoreHMAlternativesAvailable
         alternates_valid = list(set(alternates_count) - set(alternative_id_error))
+        if len(alternates_valid) == 0:
+            raise NoMoreHMAlternativesAvailable
         hosts = model.storage(conf).list_hosts({'group': group})
         alterantives_map = collections.defaultdict(int)
         for host in hosts:
