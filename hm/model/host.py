@@ -44,8 +44,21 @@ class Host(model.BaseModel):
     @classmethod
     def create(cls, manager_name, group, conf=None):
         manager = managers.by_name(manager_name, conf)
-        alternative_id = cls._current_group_alternate(group, conf)
-        host = manager.create_host(name=group, alternative_id=alternative_id)
+        alternative_id_error = []
+        last_host_create_exception = None
+        while True:
+            try:
+                alternative_id = cls._current_group_alternate(group, conf, alternative_id_error)
+            except Exception as e:
+                if last_host_create_exception:
+                    raise last_host_create_exception
+                raise e
+            try:
+                host = manager.create_host(name=group, alternative_id=alternative_id)
+                break
+            except Exception as e:
+                alternative_id_error.append(alternative_id)
+                last_host_create_exception = e
         host.manager = manager_name
         host.group = group
         host.config = conf
@@ -109,16 +122,22 @@ class Host(model.BaseModel):
             raise e
 
     @classmethod
-    def _current_group_alternate(cls, group, conf=None):
-        alternates_count = int(config.get_config("HM_ALTERNATIVE_CONFIG_COUNT", 1, conf))
+    def _current_group_alternate(cls, group, conf, alternative_id_error):
+        alternates_count = range(int(config.get_config("HM_ALTERNATIVE_CONFIG_COUNT", 1, conf)))
+        alternates_valid = list(set(alternates_count) - set(alternative_id_error))
+        if len(alternates_valid) == 0:
+            raise NoMoreHMAlternativesAvailable
         hosts = model.storage(conf).list_hosts({'group': group})
         alterantives_map = collections.defaultdict(int)
         for host in hosts:
             alterantives_map[host.alternative_id] += 1
-        min_alt_id = 0
         min_alt_count = None
-        for i in xrange(alternates_count):
+        for i in alternates_valid:
             if min_alt_count is None or alterantives_map[i] < min_alt_count:
                 min_alt_id = i
                 min_alt_count = alterantives_map[i]
         return min_alt_id
+
+
+class NoMoreHMAlternativesAvailable(Exception):
+    pass

@@ -15,6 +15,9 @@ class FakeManager(managers.BaseManager):
 
     def create_host(self, name=None, alternative_id=0):
         host_id = self.get_conf('HOST_ID')
+        alternative_id_failures = self.get_conf('ALTERNATIVE_IDS_FAILURES', '')
+        if str(alternative_id) in alternative_id_failures.split(","):
+            raise Exception("failure to create on alternative_id {}".format(alternative_id))
         return Host(id=host_id, dns_name="{}.{}.com".format(host_id, name), alternative_id=alternative_id)
 
     def destroy_host(self, id):
@@ -92,6 +95,69 @@ class HostTestCase(unittest.TestCase):
         self.assertEqual(len(hosts), 2)
         hosts = Host.list(filters={'alternative_id': 2})
         self.assertEqual(len(hosts), 1)
+
+    def test_create_alternatives_ignore_failure_and_try_next(self):
+        conf = {"HM_ALTERNATIVE_CONFIG_COUNT": "4", "ALTERNATIVE_IDS_FAILURES": "1,2"}
+        conf.update({"HOST_ID": "fake-1"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        conf.update({"HOST_ID": "fake-2"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 3)
+        conf.update({"HOST_ID": "fake-3"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        conf.update({"HOST_ID": "fake-4"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 3)
+        conf.update({"HOST_ID": "fake-5"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        conf.update({"HOST_ID": "fake-6"})
+        host = Host.create('fake', 'another-group', conf)
+        self.assertEqual(host.alternative_id, 0)
+        hosts = Host.list(filters={'alternative_id': 0})
+        self.assertEqual(len(hosts), 4)
+        hosts = Host.list(filters={'alternative_id': 1})
+        self.assertEqual(len(hosts), 0)
+        hosts = Host.list(filters={'alternative_id': 2})
+        self.assertEqual(len(hosts), 0)
+        hosts = Host.list(filters={'alternative_id': 3})
+        self.assertEqual(len(hosts), 2)
+        conf = {"HM_ALTERNATIVE_CONFIG_COUNT": "4", "ALTERNATIVE_IDS_FAILURES": ""}
+        conf.update({"HOST_ID": "fake-7"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        conf.update({"HOST_ID": "fake-8"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 2)
+        conf.update({"HOST_ID": "fake-9"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        conf.update({"HOST_ID": "fake-10"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 2)
+        conf.update({"HOST_ID": "fake-11"})
+        host = Host.create('fake', 'my-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        conf.update({"HOST_ID": "fake-12"})
+        host = Host.create('fake', 'another-group', conf)
+        self.assertEqual(host.alternative_id, 1)
+        hosts = Host.list(filters={'alternative_id': 0})
+        self.assertEqual(len(hosts), 4)
+        hosts = Host.list(filters={'alternative_id': 1})
+        self.assertEqual(len(hosts), 4)
+        hosts = Host.list(filters={'alternative_id': 2})
+        self.assertEqual(len(hosts), 2)
+        hosts = Host.list(filters={'alternative_id': 3})
+        self.assertEqual(len(hosts), 2)
+
+    def test_create_alternatives_raise_last_error_when_no_alternatives_left(self):
+        conf = {"HM_ALTERNATIVE_CONFIG_COUNT": "4", "ALTERNATIVE_IDS_FAILURES": "0,1,2,3"}
+        conf.update({"HOST_ID": "fake-1"})
+        with self.assertRaises(Exception) as create_exception:
+            Host.create('fake', 'my-group', conf)
+        self.assertEqual(str(create_exception.exception), "failure to create on alternative_id 3")
 
     def test_destroy(self):
         host = Host.create('fake', 'my-group', {"HOST_ID": "fake-id"})
