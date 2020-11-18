@@ -75,7 +75,7 @@ class CloudStackManager(managers.BaseManager):
                         tag_del_count += 1
                     if key == m_tag['key'] and value == m_tag['value']:
                         ignore_tag_key = True
-            if value is not '' and not ignore_tag_key:
+            if value != '' and not ignore_tag_key:
                 add_tags_params["tags[{}].key".format(tag_add_count)] = key
                 add_tags_params["tags[{}].value".format(tag_add_count)] = value
                 tag_add_count += 1
